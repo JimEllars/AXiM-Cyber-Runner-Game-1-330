@@ -57,7 +57,10 @@ class SynthAudioEngine {
 
   stopBassline() {
     this.isPlaying = false;
-    if (this.bassInterval) clearInterval(this.bassInterval);
+    if (this.bassInterval) {
+      clearInterval(this.bassInterval);
+      this.bassInterval = null;
+    }
   }
 }
 
