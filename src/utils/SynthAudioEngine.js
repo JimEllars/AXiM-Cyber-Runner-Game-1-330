@@ -1,3 +1,5 @@
+import { useCyberRunnerStore } from '../store/useCyberRunnerStore';
+
 class SynthAudioEngine {
   constructor() {
     this.ctx = null;
@@ -26,6 +28,8 @@ class SynthAudioEngine {
   }
 
   playTone(freq, type = 'square', duration = 0.1, vol = 0.1) {
+    const { isMuted } = useCyberRunnerStore.getState();
+    if (isMuted) return;
     this.initCtx();
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();

@@ -21,3 +21,14 @@ Alternatively, to strictly mock and test the \`navigator.share\` error handling 
     navigator.share = () => Promise.reject(new Error("Simulated share failure"));
     \`\`\`
 *   Click the "Share Score" button. The application will catch this failure and gracefully fallback to the clipboard implementation, verifying stability.
+
+## Sprint 12 Delivery: Web3 Tx UX, Preferences, & Sync
+
+### Testing Wagmi Transaction Loading States
+1. Ensure your browser has a Web3 wallet (e.g., MetaMask, Rabby) installed and connected to the Arbitrum testnet (or mainnet).
+2. Start the local dev server using `npm run dev`.
+3. Force the `TokenGateModal` to appear by consuming your free daily run or manually setting `ticketStatus: { freeRunAvailable: false }` in the Zustand store.
+4. Click "Pay 5.00 AXiM". The button text should immediately change to "Awaiting Wallet Approval..." and disable the UI.
+5. In your wallet extension, observe the transaction prompt.
+    - If you **Reject** the transaction: The UI should correctly catch the rejection, display a toast notification ("TRANSACTION CANCELLED"), and safely revert to the unranked mode selection without breaking the flow.
+    - If you **Confirm** the transaction: The UI should advance to "Confirming on Arbitrum...". Once the transaction is mined and verified on-chain, it should finally display "Run Unlocked!" and automatically dismiss the modal.

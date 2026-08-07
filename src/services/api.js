@@ -74,5 +74,28 @@ export const runnerApi = {
       console.error('Submission Error:', error);
       throw error;
     }
+  },
+
+  /**
+   * Syncs newly unlocked achievements to the Edge Bridge
+   */
+  async syncAchievements(payload) {
+    try {
+      const response = await fetchWithTimeout(`${API_BASE}/sync-achievements`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+        timeout: 3000
+      });
+
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Sync failed');
+      return result;
+    } catch (error) {
+      console.error('Achievement Sync Error:', error);
+      throw error;
+    }
   }
 };
