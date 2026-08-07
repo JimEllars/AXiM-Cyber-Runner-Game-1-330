@@ -2,22 +2,28 @@ import React from 'react';
 import { useCyberRunnerStore } from '../store/useCyberRunnerStore';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
-import { generateShareData, copyToClipboard } from '../utils/shareHelpers';
+import { generateShareData, copyToClipboard, nativeShare } from '../utils/shareHelpers';
 
 const { FiShield, FiZap, FiPlay, FiRefreshCw, FiLoader, FiTwitter, FiSend, FiCopy, FiShare2 } = FiIcons;
 
 const RunnerHUD = () => {
   const { 
-    gameState, score, distance, multiplier, hasShield, 
+    gameState, score, distance, multiplier, streakMultiplier, challengeProgress, hasShield,
     crtEnabled, toggleCrt, startGame, ticketStatus, addToast 
   } = useCyberRunnerStore();
 
-  const handleShare = (platform) => {
-    const data = generateShareData(score, distance);
-    if (platform === 'copy') {
-      copyToClipboard(data.text).then(success => {
-        if (success) addToast('INTEL COPIED', 'Score report saved to clipboard', 'info');
-      });
+  const handleShare = async (platform) => {
+    const data = generateShareData(score, challengeProgress.streak_days);
+    if (platform === 'native') {
+      const success = await nativeShare(data);
+      if (success) {
+        addToast('BROADCAST SUCCESS', 'Run data shared', 'info');
+      }
+    } else if (platform === 'copy') {
+      const success = await copyToClipboard(data.text);
+      if (success) {
+        addToast('INTEL COPIED', 'Score report saved to clipboard', 'info');
+      }
     } else {
       window.open(data[platform], '_blank');
     }
@@ -31,6 +37,11 @@ const RunnerHUD = () => {
           <div className="text-2xl text-glow-cyan text-neon-cyan font-bold tracking-tighter">
             SCORE: {Math.floor(score).toLocaleString()}
           </div>
+          {streakMultiplier > 1 && (
+            <div className="text-xl text-neon-gold font-black italic animate-pulse shadow-[0_0_10px_rgba(255,183,0,0.5)] bg-black/50 px-2 py-1 rounded border border-neon-gold/50">
+              🔥 {streakMultiplier}x STREAK
+            </div>
+          )}
           <div className="text-xs text-neon-magenta bg-neon-magenta/10 self-start px-2 py-0.5 rounded border border-neon-magenta/20">
             RANGE: {Math.floor(distance)}M
           </div>
@@ -122,6 +133,13 @@ const RunnerHUD = () => {
                   title="Copy Report"
                 >
                   <SafeIcon icon={FiCopy} />
+                </button>
+                <button
+                  onClick={() => handleShare('native')}
+                  className="p-2.5 bg-white/5 border border-white/10 rounded hover:border-green-400 hover:text-green-400 transition-all"
+                  title="Share Score"
+                >
+                  <SafeIcon icon={FiShare2} />
                 </button>
               </div>
             </div>

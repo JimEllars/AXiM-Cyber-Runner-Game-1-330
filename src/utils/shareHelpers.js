@@ -1,8 +1,8 @@
 /**
  * Generates sharing URLs and text for social platforms
  */
-export const generateShareData = (score, distance) => {
-  const text = `I just clocked ${Math.floor(score).toLocaleString()} pts in AXiM Cyber-Runner! 🏃‍♂️💨\n\nTotal distance: ${Math.floor(distance)}m. Can you beat my run in the Neon District?\n\nPlay now: ${window.location.origin}\n\n#AXiM #CyberRunner #Web3Gaming #Arcade`;
+export const generateShareData = (score, streakDays) => {
+  const text = `I just scored ${Math.floor(score).toLocaleString()} on AXiM Cyber-Runner and hit a ${streakDays} day streak! 🏃‍♂️💨 Can you beat my high score on Arbitrum? ${window.location.origin}`;
   
   return {
     text,
@@ -18,5 +18,29 @@ export const copyToClipboard = async (text) => {
   } catch (err) {
     console.error('Failed to copy: ', err);
     return false;
+  }
+};
+export const nativeShare = async (shareData) => {
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: 'AXiM Cyber-Runner',
+        text: shareData.text,
+        url: window.location.origin
+      });
+      return true;
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        console.error('Error sharing:', err);
+      }
+      // Fallback on error if share fails (e.g. permission error)
+      if (err.name !== 'AbortError') {
+         return await copyToClipboard(shareData.text);
+      }
+      return false;
+    }
+  } else {
+    // Fallback to clipboard
+    return await copyToClipboard(shareData.text);
   }
 };

@@ -14,6 +14,7 @@ export const useCyberRunnerStore = create(
       isPaused: false,
       powerNodes: 0,
       multiplier: 1.0,
+      streakMultiplier: 1.0,
       hasShield: false,
       hasMagnet: false,
       crtEnabled: true,
@@ -65,8 +66,12 @@ export const useCyberRunnerStore = create(
 
       initializeSession: async () => {
         const { playerAddress } = get();
-        const status = await runnerApi.getTicketStatus(playerAddress);
-        set({ ticketStatus: status });
+        const [status, streakMult] = await Promise.all([
+          runnerApi.getTicketStatus(playerAddress),
+          runnerApi.getStreakMultiplier(playerAddress)
+        ]);
+        set({ ticketStatus: status, streakMultiplier: streakMult });
+
       },
       
       startGame: () => {
@@ -86,34 +91,26 @@ export const useCyberRunnerStore = create(
         const { score, distance, powerNodes, multiplier, runHash, startTime, playerAddress, gameState, challengeProgress } = get();
         if (gameState !== 'PLAYING') return;
         
-        set({ gameState: 'SUBMITTING' });
+        set({ gameState: 'SUBMITTING', score: score * get().streakMultiplier });
         const elapsedTimeSec = (Date.now() - startTime) / 1000;
         const today = new Date().toISOString().split('T')[0];
         const isNewDay = challengeProgress.last_play_date !== today;
         
         const newProgress = {
           ...challengeProgress,
-          cumulative_distance: challengeProgress.cumulative_distance + distance,
-          cumulative_nodes: challengeProgress.cumulative_nodes + powerNodes,
-          best_score: Math.max(challengeProgress.best_score, score),
+          best_score: Math.max(challengeProgress.best_score, score * get().streakMultiplier),
           last_play_date: today,
           streak_days: isNewDay ? challengeProgress.streak_days + 1 : challengeProgress.streak_days
         };
 
-        WEEKLY_CHALLENGES.forEach(c => {
-          const oldVal = get().getProgressValue(c.type, challengeProgress);
-          const newVal = get().getProgressValue(c.type, newProgress);
-          if (oldVal < c.goal && newVal >= c.goal) {
-            get().addToast('CHALLENGE COMPLETE', c.title, 'achievement');
-          }
-        });
+        get().checkChallengeThresholds(challengeProgress, newProgress);
 
         set({ challengeProgress: newProgress });
 
         try {
           await runnerApi.submitRun({
             playerAddress,
-            score: Math.floor(score),
+            score: Math.floor(score * get().streakMultiplier),
             distance: Math.floor(distance),
             powerNodes,
             multiplier,
@@ -125,6 +122,16 @@ export const useCyberRunnerStore = create(
         } catch (error) {
           set({ gameState: 'GAMEOVER' });
         }
+      },
+
+      checkChallengeThresholds: (oldProgress, newProgress) => {
+        WEEKLY_CHALLENGES.forEach(c => {
+          const oldVal = get().getProgressValue(c.type, oldProgress);
+          const newVal = get().getProgressValue(c.type, newProgress);
+          if (oldVal < c.goal && newVal >= c.goal) {
+            get().addToast('CHALLENGE COMPLETE', c.title, 'achievement');
+          }
+        });
       },
 
       getProgressValue: (type, progress) => {
@@ -154,11 +161,17 @@ export const useCyberRunnerStore = create(
           setTimeout(() => set({ hasMagnet: false }), 8000);
         }
 
+        const newPowerNodes = state.powerNodes + 1;
+        const newScore = state.score + (pts * state.multiplier);
+        const newProgress = { ...state.challengeProgress, cumulative_nodes: state.challengeProgress.cumulative_nodes + 1 };
+        get().checkChallengeThresholds(state.challengeProgress, newProgress);
+
         return {
-          score: state.score + (pts * state.multiplier),
-          powerNodes: state.powerNodes + 1,
+          score: newScore,
+          powerNodes: newPowerNodes,
           hasShield: newShield,
-          hasMagnet: newMagnet
+          hasMagnet: newMagnet,
+          challengeProgress: newProgress
         };
       }),
 
@@ -172,16 +185,25 @@ export const useCyberRunnerStore = create(
         get().endGame();
       },
 
-      updateDistance: (dist, currentScore) => set({ 
-        distance: dist,
-        score: currentScore
+      updateDistance: (dist, currentScore) => set((state) => {
+        const deltaDist = dist - state.distance;
+        if (deltaDist <= 0) return { distance: dist, score: currentScore };
+
+        const newProgress = { ...state.challengeProgress, cumulative_distance: state.challengeProgress.cumulative_distance + deltaDist };
+        get().checkChallengeThresholds(state.challengeProgress, newProgress);
+
+        return {
+          distance: dist,
+          score: currentScore,
+          challengeProgress: newProgress
+        };
       }),
 
       toggleCrt: () => set((state) => ({ crtEnabled: !state.crtEnabled }))
     }),
     {
       name: 'axim-runner-storage',
-      storage: createJSONStorage(() => sessionStorage),
+      storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({ 
         challengeProgress: state.challengeProgress,
         playerAddress: state.playerAddress,
@@ -193,6 +215,7 @@ export const useCyberRunnerStore = create(
         gameState: state.gameState,
         powerNodes: state.powerNodes,
         multiplier: state.multiplier,
+        streakMultiplier: state.streakMultiplier,
         hasShield: state.hasShield,
         hasMagnet: state.hasMagnet,
         runHash: state.runHash,

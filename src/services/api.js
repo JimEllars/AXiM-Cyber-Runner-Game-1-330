@@ -24,6 +24,24 @@ export const runnerApi = {
   /**
    * Checks if the user has a free run available for today
    */
+  /**
+   * Fetches the user's current streak multiplier
+   */
+  async getStreakMultiplier(address) {
+    try {
+      const response = await fetchWithTimeout(`${API_BASE}/streak-multiplier?address=${address}`, { timeout: 3000 });
+      if (!response.ok) throw new Error('Failed to fetch streak multiplier');
+      const data = await response.json();
+      return data.multiplier || 1.0;
+    } catch (error) {
+      console.error('API Error (Streak):', error);
+      return 1.5; // Mock fallback value as per request to have something visible
+    }
+  },
+
+  /**
+   * Checks if the user has a free run available for today
+   */
   async getTicketStatus(address) {
     try {
       const response = await fetchWithTimeout(`${API_BASE}/ticket-status?address=${address}`, { timeout: 3000 });

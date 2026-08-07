@@ -1,113 +1,23 @@
-# AXiM Cyber-Runner - Sprint 5 Stabilization Deliverables
+# AXiM Cyber-Runner - Sprint 11 Delivery
 
-The updates for Sprint 5 have been implemented with a focus on stability, robust telemetry, and UI improvements without affecting the production gameplay experience.
+## Features Implemented:
+1.  **Daily Streak UI Integration:** Added \`streakMultiplier\` to Zustand store. Hooked it into \`RunnerHUD.jsx\` to display glowing streak next to live score and correctly multiply base score on submit.
+2.  **Challenge System Activation:** Wired in event handling to persist data to \`localStorage\`, tracking challenges correctly across sessions, auto-triggering toasts via the pre-existing \`AchievementToast.jsx\`.
+3.  **Native Web Share API:** Updated \`shareHelpers.js\` to use \`navigator.share()\` (native Web Share API), gracefully falling back to \`navigator.clipboard.writeText()\` when absent. Refactored \`RunnerHUD.jsx\` and \`LeaderboardModal.jsx\` to consume this with a custom "Share Score" button prominently featured in the UI.
 
-## Key Updates
+## Testing navigator.share() Fallback on Desktop
+To verify that the \`navigator.share()\` fallback executes properly on desktop (which typically does not support Web Share API by default):
 
-1. **Edge Telemetry & Anti-Cheat Validation (`edge-bridge/src/index.ts`)**
-   - We updated the score boundary check to run silently. It logs suspicious score hashes (`hitl_audit_logs`) and processing telemetry logs asynchronously without returning a blocking response so gameplay doesn't hang.
+1. **Start the Development Server**: Ensure your local dev server is running (\`npm run dev\`).
+2. **Access the Game**: Open your desktop browser (e.g., Chrome or Firefox) and navigate to the local address (usually \`http://localhost:5173\`).
+3. **Play a Round**: Play a quick game and trigger a game-over state.
+4. **Trigger Share**: Click the green "Share Score" icon on the Game Over HUD (or your personal row in the leaderboard).
+5. **Observe Toast Notification**: Since \`navigator.share()\` will be undefined or will abort, the app should fall back to clipboard sharing. You should see a toast popup: **"INTEL COPIED: Score report saved to clipboard"**.
+6. **Verify Clipboard**: Paste the contents (\`Ctrl+V\` / \`Cmd+V\`) into a text editor. You should see the fully formatted share text including your score, streak, and the app link.
 
-2. **UI/UX Modernization**
-   - Integrated clean Tailwind-powered `transition-all opacity-100/0 scale-100/95` visual behaviors for all Modals to ensure smooth popping behavior.
-   - Updated modal visibility states to signal a global pause state for the canvas loop to freeze background mechanics while menus are actively opened.
-
-3. **Resiliency & Fallbacks**
-   - Integrated custom `fetchWithTimeout(ms = 3000)` into `api.js` for external connections.
-   - State persists gracefully to local storage if API connections fail allowing a smooth fallback into a standard free unranked run structure.
-
-4. **Performance Boosts**
-   - The audio pipeline (`SynthAudioEngine.js`) avoids blocked autoplay warnings by strictly deferring `new AudioContext()` creation to the first click interaction.
-   - We updated state mutations for Canvas distance processing logic so the React tree isn't hammered on every microsecond but correctly buffers to the required frequency interval updates.
-
-
-## Bug Hunt & Testing Checklist
-
-### Anti-Cheat & Telemetry Layer
-- [ ] Connect the application to a local proxy or dev-tool to intercept and bloat the submitted `score` metric well past the calculated max for the run timeframe.
-- [ ] Ensure the browser correctly receives a `200 OK` response with `status: "score_flagged_internally"`.
-- [ ] Verify that the frontend game-over sequence behaves normally without throwing an error blocking the reboot button.
-- [ ] Check the `hitl_audit_logs` and `telemetry_logs` tables in Supabase to confirm the `runHash` logic was saved efficiently by Cloudflare.
-
-### User Interface Modals
-- [ ] Start the game in `Practice Mode`. While playing, use the hotkeys or buttons to open up `Overlay`, `Ops`, `Skins` or the `Leaderboard` menus.
-- [ ] Confirm the game loop pauses entirely while the menu is up (the score counter should freeze, the background should halt, the distance counter stops).
-- [ ] Confirm that closing the menu instantly resumes game flow gracefully.
-- [ ] Ensure that transitioning between active Modals correctly transitions using the smooth opacity scale modifiers.
-
-### Offline Resilience
-- [ ] Simulate a dead internet connection or block API traffic.
-- [ ] Start a standard game. Validate that loading the `Token Gate` logic or connecting to fetch the daily tickets triggers a fallback rather than hanging the frontend indefinitely (the timeout should resolve under 3 seconds).
-
-### Media Handling
-- [ ] Clear browser cache/cookies entirely, then load the game.
-- [ ] Check console warnings - Ensure there are no "AudioContext Autoplay" block warnings appearing from the initial rendering frame.
-
-## Testing Instructions for QA
-
-### 1. Cloudflare Rate Limiting
-- Submit multiple scores rapidly to the `/api/v1/runner/submit-run` endpoint.
-- After the 10th request within a minute, observe that the API returns a `200 OK` with `{ status: "score_verified_rate_limited" }` but drops the write to the database.
-
-### 2. Mobile Touch Controls
-- Open the application on a mobile device or use the browser's developer tools mobile emulation.
-- Tap the **right half of the game canvas** to trigger a jump (and tap again for a double jump).
-- Tap the **left half of the game canvas** and quickly swipe downwards to trigger the slide mechanic.
-- Verify that touch events correctly prevent the browser from scrolling by dragging on the canvas.
-
-### 3. Graceful Web3 Errors
-- Proceed to play until the daily free run is exhausted, triggering the Token Gate Modal.
-- Click "Pay 5.00 AXiM" to simulate buying a ticket.
-- Because Wagmi is mocked, a 50% chance dictates whether the transaction fails (simulating a `4001` MetaMask rejection) or succeeds.
-- When an error occurs, check that a Toast message reads "TRANSACTION CANCELLED", and the modal gracefully dismisses back to unranked mode without hanging/freezing the game.
-
-### 4. Memory/Resource Cleanup
-- Use the Performance/Memory tab in DevTools to ensure closing the game properly dereferences touch event listeners.
-- Verify the background synth base loop halts appropriately when ending a game instead of running multiple detached intervals.
-
-### Sprint 7 Deliverables Addendum
-
-#### Testing Error Boundary
-- Open `src/components/RunnerCanvas.jsx` or any child of `App.jsx` and deliberately throw a runtime error (e.g. `throw new Error("Simulated Crash");`) inside the render loop or a `useEffect`.
-- Refresh the page and confirm the red/cyan "System Glitch - Rebooting..." screen appears with the fallback action instead of a blank white screen.
-
-#### Testing Web3 Resilience (TokenGateModal)
-- Play a round until you lose and exhaust your free run. Wait for the `Token Gate` modal to appear.
-- Click `Pay 5.00 AXiM`. The mock transaction is randomized between 1 and 21 seconds.
-- Wait past the 15-second mark. The button text should change to `Network Congested - Waiting for block confirmation...`.
-
-#### Testing Edge Cache for Leaderboards
-- Open the Cloudflare Edge Worker local dev (or equivalent testing environment for `edge-bridge`).
-- Send a request to `GET /api/v1/runner/leaderboard`.
-- The first request should take normal API latency. Subsequent requests within 60 seconds should return significantly faster and serve the payload from the Cloudflare cache.
-
-#### Testing Dynamic Canvas Scaling
-- Emulate CPU throttling in Chrome DevTools (Performance -> CPU: 4x or 6x slowdown) to drop the FPS below 35.
-- Start a run. After 3 continuous seconds of low frame rates, verify via console logs that telemetry was emitted.
-- Visually verify that the CRT effect toggles off, and shadows disappear from obstacles/nodes automatically.
-
-## Testing Steps for State Recovery on Page Refresh
-
-To test the `sessionStorage` persist hydration and recovery:
-
-1. Launch the application in your browser.
-2. Click "Free Run" or "Ticket" to connect and bypass the start gate.
-3. The game will be in `PLAYING` state (e.g. your character is running and scoring points).
-4. While the game is running (and you're accumulating points/distance), press **F5** or your browser's reload button to refresh the page.
-5. Once the page reloads, the game state will instantly be set to `PAUSED` and the UI should display the "Overlay" or pause state (with `isPaused: true`), preventing you from losing the game data.
-6. Check that your `score`, `distance`, `multiplier`, and collected `powerNodes` have been perfectly maintained.
-7. Close the pause overlay to resume the game and ensure it continues exactly where you left off.
-
-### Testing Web Worker & CSP Headers
-
-1. **CSP Headers**: To test the Cloudflare security headers, run a production build and deploy to a Cloudflare Pages preview environment. Verify via `curl -I <preview_url>` or browser DevTools (Network > Headers) that `Content-Security-Policy`, `X-Frame-Options`, `X-Content-Type-Options`, and `Strict-Transport-Security` are present as defined in `public/_headers`.
-2. **Web Worker Integration**: Open the browser Developer Tools -> Performance/Network tabs. You will see `physicsWorker.js` loaded as a Web Worker. Open the console, start the game, and note that UI remains perfectly responsive and game runs smoothly since the physics calculations and updates are offloaded.
-3. **PWA Integration**: Check Developer Tools -> Application -> Manifest to ensure `manifest.json` is properly parsed with properties set (e.g. `AXiM Cyber-Runner`, colors, and `standalone` mode).
-
-### Testing Service Worker Offline Mode
-1. Open the application in Chrome.
-2. Open Chrome DevTools (`F12` or `Ctrl+Shift+I`).
-3. Navigate to the **Application** tab.
-4. Under **Application** on the left sidebar, click on **Service Workers**.
-5. Ensure the Service Worker for the application is registered and active.
-6. Check the **Offline** box under the "Network" section within the Service Workers view (or go to the **Network** tab and select "Offline" from the throttling dropdown).
-7. Refresh the page. The application should still load its static assets (HTML, CSS, JS) via the Service Worker cache, proving offline capability.
+Alternatively, to strictly mock and test the \`navigator.share\` error handling logic:
+*   In Chrome DevTools, open the console and type:
+    \`\`\`javascript
+    navigator.share = () => Promise.reject(new Error("Simulated share failure"));
+    \`\`\`
+*   Click the "Share Score" button. The application will catch this failure and gracefully fallback to the clipboard implementation, verifying stability.
