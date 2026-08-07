@@ -8,6 +8,7 @@ class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
     this.state = { hasError: false };
+    this.handleReboot = this.handleReboot.bind(this);
   }
 
   static getDerivedStateFromError(error) {
@@ -18,7 +19,7 @@ class ErrorBoundary extends React.Component {
     console.error("Caught in ErrorBoundary:", error, errorInfo);
   }
 
-  handleReboot = () => {
+  handleReboot() {
     this.setState({ hasError: false });
     // Reset to practice mode could be handled here or by reloading
     window.location.reload();

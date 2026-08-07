@@ -6,19 +6,36 @@ const RunnerCanvas = () => {
   const canvasRef = useRef(null);
   const { 
     gameState, hitObstacle, collectNode, updateDistance, isPaused,
-    score, multiplier, getSelectedSkin, getSelectedTheme, hasMagnet 
+    score, multiplier, getSelectedSkin, getSelectedTheme, hasMagnet, crtEnabled, toggleCrt
   } = useCyberRunnerStore();
 
   useEffect(() => {
-    const canvas = canvasRef.current;
+
+    // Cache styles
+
+    const skin = getSelectedSkin();
+    const theme = getSelectedTheme();
+
+    const cachedStyles = {
+      themeBackground: theme.backgroundColor,
+      themeFloor: theme.floorColor,
+      themeGrid: theme.gridColor,
+      themeSecondary: theme.secondaryColor,
+      themePrimary: theme.primaryColor,
+      themeAccent: theme.accentColor,
+      skinPrimary: skin.primaryColor,
+      skinShadow: skin.shadowColor,
+      skinEffect: skin.effect,
+      skinGlow: skin.glowIntensity,
+      themeId: theme.id
+    };
+const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     let animationFrameId;
     let startTime = Date.now();
     let lastTime = startTime;
     
-    const skin = getSelectedSkin();
-    const theme = getSelectedTheme();
-    
+
     let player = {
       x: 50,
       y: 250,
@@ -216,7 +233,7 @@ const checkCollision = (rect1, rect2) => {
       spawnNode();
 
       // Background
-      ctx.fillStyle = theme.backgroundColor;
+      ctx.fillStyle = cachedStyles.themeBackground;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       // Parallax Background Layers
@@ -226,7 +243,7 @@ const checkCollision = (rect1, rect2) => {
         ctx.fillStyle = layer.color;
         
         // Render theme-specific background shapes
-        if (theme.id === 'cosmos') {
+        if (cachedStyles.themeId === 'cosmos') {
           // Draw stars/craters
           ctx.globalAlpha = 0.5;
           ctx.beginPath();
@@ -240,7 +257,7 @@ const checkCollision = (rect1, rect2) => {
       });
 
       // Grid Floor
-      ctx.strokeStyle = theme.floorColor;
+      ctx.strokeStyle = cachedStyles.themeFloor;
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(0, 300);
@@ -250,7 +267,7 @@ const checkCollision = (rect1, rect2) => {
       // Floor Perspective Grid
       for(let i=0; i<15; i++) {
         let xPos = (backgroundLayers[0].x * 2 + (i * 100)) % canvas.width;
-        ctx.strokeStyle = theme.gridColor;
+        ctx.strokeStyle = cachedStyles.themeGrid;
         ctx.beginPath();
         ctx.moveTo(xPos, 300);
         ctx.lineTo(xPos - 50, 400);
@@ -258,32 +275,32 @@ const checkCollision = (rect1, rect2) => {
       }
 
       // Skin Effects
-      if (skin.effect === 'trail') {
+      if (cachedStyles.skinEffect === 'trail') {
         player.trail.push({ x: player.x, y: player.y, h: player.h });
         if (player.trail.length > 12) player.trail.shift();
         player.trail.forEach((pos, idx) => {
           ctx.globalAlpha = idx / 12;
-          ctx.fillStyle = skin.primaryColor;
+          ctx.fillStyle = cachedStyles.skinPrimary;
           ctx.fillRect(pos.x - (12 - idx) * 3, pos.y, player.w, pos.h);
         });
         ctx.globalAlpha = 1.0;
       }
 
-      if (skin.effect === 'ghost') {
+      if (cachedStyles.skinEffect === 'ghost') {
         ctx.globalAlpha = 0.4 + Math.abs(Math.sin(now / 150)) * 0.3;
       }
 
       // Render Player based on Theme
-      ctx.shadowBlur = performanceMode ? 0 : (skin.effect === 'pulse' ? skin.glowIntensity + Math.sin(now / 200) * 12 : skin.glowIntensity);
-      ctx.shadowColor = skin.shadowColor;
-      ctx.fillStyle = skin.primaryColor;
+      ctx.shadowBlur = performanceMode ? 0 : (cachedStyles.skinEffect === 'pulse' ? cachedStyles.skinGlow + Math.sin(now / 200) * 12 : cachedStyles.skinGlow);
+      ctx.shadowColor = cachedStyles.skinShadow;
+      ctx.fillStyle = cachedStyles.skinPrimary;
       
-      if (theme.id === 'torrent') {
+      if (cachedStyles.themeId === 'torrent') {
         // Draw Fish shape
         ctx.beginPath();
         ctx.ellipse(player.x + 15, player.y + player.h/2, 15, player.h/2, 0, 0, Math.PI * 2);
         ctx.fill();
-      } else if (theme.id === 'cosmos') {
+      } else if (cachedStyles.themeId === 'cosmos') {
         // Draw Alien shape
         ctx.fillRect(player.x + 5, player.y, 20, player.h);
         ctx.beginPath();
@@ -301,16 +318,16 @@ const checkCollision = (rect1, rect2) => {
         let obs = obstacles[i];
         obs.x -= speed * dt;
         
-        ctx.shadowColor = theme.secondaryColor;
+        ctx.shadowColor = cachedStyles.themeSecondary;
         ctx.shadowBlur = performanceMode ? 0 : 10;
-        ctx.fillStyle = theme.secondaryColor;
+        ctx.fillStyle = cachedStyles.themeSecondary;
         
-        if (theme.id === 'torrent') {
+        if (cachedStyles.themeId === 'torrent') {
           // River Rocks / Logs
           ctx.beginPath();
           ctx.roundRect(obs.x, obs.y, obs.w, obs.h, 5);
           ctx.fill();
-        } else if (theme.id === 'cosmos') {
+        } else if (cachedStyles.themeId === 'cosmos') {
           // Asteroids
           ctx.beginPath();
           ctx.arc(obs.x + obs.w/2, obs.y + obs.h/2, obs.w/2, 0, Math.PI * 2);
@@ -342,8 +359,8 @@ const checkCollision = (rect1, rect2) => {
 
         node.x -= speed * dt;
         
-        let nodeColor = theme.primaryColor;
-        if (node.type === 'gold') nodeColor = theme.accentColor;
+        let nodeColor = cachedStyles.themePrimary;
+        if (node.type === 'gold') nodeColor = cachedStyles.themeAccent;
         if (node.type === 'shield') nodeColor = '#3b82f6';
         if (node.type === 'magnet') nodeColor = '#a855f7';
 
@@ -351,7 +368,7 @@ const checkCollision = (rect1, rect2) => {
         ctx.shadowColor = nodeColor;
         ctx.fillStyle = nodeColor;
         
-        if (theme.id === 'torrent') {
+        if (cachedStyles.themeId === 'torrent') {
           // Bubbles
           ctx.strokeStyle = nodeColor;
           ctx.lineWidth = 2;

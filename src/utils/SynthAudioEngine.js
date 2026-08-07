@@ -3,7 +3,22 @@ class SynthAudioEngine {
     this.ctx = null;
     this.basslineOsc = null;
     this.isPlaying = false;
+    this.warmedUp = false;
   }
+
+  warmUp() {
+    if (this.warmedUp) return;
+    this.warmedUp = true;
+    this.initCtx();
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    gain.gain.setValueAtTime(0.001, this.ctx.currentTime); // Almost muted
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.01);
+  }
+
 
   initCtx() {
     if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -64,4 +79,16 @@ class SynthAudioEngine {
   }
 }
 
+
 export const audioEngine = new SynthAudioEngine();
+
+const unlockAudio = () => {
+  audioEngine.warmUp();
+  document.removeEventListener('click', unlockAudio);
+  document.removeEventListener('keydown', unlockAudio);
+  document.removeEventListener('touchstart', unlockAudio);
+};
+
+document.addEventListener('click', unlockAudio);
+document.addEventListener('keydown', unlockAudio);
+document.addEventListener('touchstart', unlockAudio);

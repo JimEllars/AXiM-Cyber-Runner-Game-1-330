@@ -84,3 +84,15 @@ The updates for Sprint 5 have been implemented with a focus on stability, robust
 - Emulate CPU throttling in Chrome DevTools (Performance -> CPU: 4x or 6x slowdown) to drop the FPS below 35.
 - Start a run. After 3 continuous seconds of low frame rates, verify via console logs that telemetry was emitted.
 - Visually verify that the CRT effect toggles off, and shadows disappear from obstacles/nodes automatically.
+
+## Testing Steps for State Recovery on Page Refresh
+
+To test the `sessionStorage` persist hydration and recovery:
+
+1. Launch the application in your browser.
+2. Click "Free Run" or "Ticket" to connect and bypass the start gate.
+3. The game will be in `PLAYING` state (e.g. your character is running and scoring points).
+4. While the game is running (and you're accumulating points/distance), press **F5** or your browser's reload button to refresh the page.
+5. Once the page reloads, the game state will instantly be set to `PAUSED` and the UI should display the "Overlay" or pause state (with `isPaused: true`), preventing you from losing the game data.
+6. Check that your `score`, `distance`, `multiplier`, and collected `powerNodes` have been perfectly maintained.
+7. Close the pause overlay to resume the game and ensure it continues exactly where you left off.
