@@ -160,7 +160,7 @@ const RunnerCanvas = () => {
       }
     };
 
-    const checkCollision = (rect1, rect2) => {
+const checkCollision = (rect1, rect2) => {
       return (
         rect1.x < rect2.x + rect2.w &&
         rect1.x + rect1.w > rect2.x &&
@@ -169,9 +169,34 @@ const RunnerCanvas = () => {
       );
     };
 
+    let fpsFrames = 0;
+    let fpsLastTime = performance.now();
+    let lowFpsTime = 0;
+    let performanceMode = false;
+
     const render = () => {
       if (gameState !== 'PLAYING') return;
       const now = Date.now();
+
+      // FPS Calculation
+      fpsFrames++;
+      const currentPerfTime = performance.now();
+      if (currentPerfTime > fpsLastTime + 1000) {
+        const fps = Math.round((fpsFrames * 1000) / (currentPerfTime - fpsLastTime));
+        fpsFrames = 0;
+        fpsLastTime = currentPerfTime;
+
+        if (fps < 35 && !performanceMode) {
+            lowFpsTime += 1000;
+            if (lowFpsTime >= 3000) {
+                performanceMode = true;
+                if (crtEnabled && toggleCrt) toggleCrt();
+                console.log("TELEMETRY: Low FPS detected. Enabling performance mode (disabling CRT and heavy shadows).");
+            }
+        } else if (fps >= 35) {
+            lowFpsTime = 0;
+        }
+      }
       const dt = Math.min((now - lastTime) / 1000, 0.1);
       lastTime = now;
       const t = (now - startTime) / 1000;
@@ -249,7 +274,7 @@ const RunnerCanvas = () => {
       }
 
       // Render Player based on Theme
-      ctx.shadowBlur = skin.effect === 'pulse' ? skin.glowIntensity + Math.sin(now / 200) * 12 : skin.glowIntensity;
+      ctx.shadowBlur = performanceMode ? 0 : (skin.effect === 'pulse' ? skin.glowIntensity + Math.sin(now / 200) * 12 : skin.glowIntensity);
       ctx.shadowColor = skin.shadowColor;
       ctx.fillStyle = skin.primaryColor;
       
@@ -277,7 +302,7 @@ const RunnerCanvas = () => {
         obs.x -= speed * dt;
         
         ctx.shadowColor = theme.secondaryColor;
-        ctx.shadowBlur = 10;
+        ctx.shadowBlur = performanceMode ? 0 : 10;
         ctx.fillStyle = theme.secondaryColor;
         
         if (theme.id === 'torrent') {
@@ -322,7 +347,7 @@ const RunnerCanvas = () => {
         if (node.type === 'shield') nodeColor = '#3b82f6';
         if (node.type === 'magnet') nodeColor = '#a855f7';
 
-        ctx.shadowBlur = 15;
+        ctx.shadowBlur = performanceMode ? 0 : 15;
         ctx.shadowColor = nodeColor;
         ctx.fillStyle = nodeColor;
         

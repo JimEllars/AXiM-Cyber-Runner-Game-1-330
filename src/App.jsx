@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ErrorBoundary from './components/ErrorBoundary';
 import RunnerCanvas from './components/RunnerCanvas';
 import RunnerHUD from './components/RunnerHUD';
 import TokenGateModal from './components/TokenGateModal';
@@ -31,6 +32,7 @@ function App() {
   }, [showGate, showLeaderboard, showSkins, showChallenges, showThemes, setIsPaused]);
 
   return (
+    <ErrorBoundary>
     <div className={`min-h-screen bg-neon-bg text-white flex flex-col relative overflow-hidden select-none ${crtEnabled ? 'crt-scanlines' : ''}`}>
       
       <div className="absolute inset-0 z-0 pointer-events-none opacity-20">
@@ -123,6 +125,7 @@ function App() {
       <SkinSelectorModal isOpen={showSkins} onClose={() => setShowSkins(false)} />
       <ChallengesModal isOpen={showChallenges} onClose={() => setShowChallenges(false)} />
     </div>
+    </ErrorBoundary>
   );
 }
 
