@@ -9,7 +9,7 @@ const { FiShield, FiZap, FiPlay, FiRefreshCw, FiLoader, FiTwitter, FiSend, FiCop
 const RunnerHUD = () => {
   const { 
     gameState, score, distance, multiplier, streakMultiplier, challengeProgress, hasShield,
-    crtEnabled, toggleCrt, startGame, ticketStatus, addToast 
+    crtEnabled, toggleCrt, isMuted, toggleMute, startGame, ticketStatus, addToast
   } = useCyberRunnerStore();
 
   const handleShare = async (platform) => {
@@ -56,6 +56,12 @@ const RunnerHUD = () => {
           <div className="flex items-center gap-2 text-neon-gold border border-neon-gold/50 bg-neon-gold/5 px-3 py-1 rounded shadow-[0_0_10px_rgba(255,183,0,0.2)]">
             <SafeIcon icon={FiZap} /> {multiplier.toFixed(2)}x MULT
           </div>
+                    <button
+            onClick={toggleMute}
+            className="pointer-events-auto text-[10px] border border-gray-700 px-2 py-1 rounded hover:bg-gray-800 text-gray-500 transition-colors uppercase tracking-widest"
+          >
+            {isMuted ? 'UNMUTE' : 'MUTE'}
+          </button>
           <button 
             onClick={toggleCrt} 
             className="pointer-events-auto text-[10px] border border-gray-700 px-2 py-1 rounded hover:bg-gray-800 text-gray-500 transition-colors uppercase tracking-widest"

@@ -1,46 +1,79 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { parseEther } from 'viem';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 import { useCyberRunnerStore } from '../store/useCyberRunnerStore';
 
 const { FiUnlock, FiX } = FiIcons;
 
+const AXIM_CONTRACT_ADDRESS = '0x1234567890123456789012345678901234567890'; // Replace with actual
+const ABI = [
+  {
+    name: 'payFee',
+    type: 'function',
+    stateMutability: 'payable',
+    inputs: [],
+    outputs: []
+  }
+];
+
 const TokenGateModal = ({ isOpen, onClose }) => {
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [txStatus, setTxStatus] = useState(''); // New state for tx status
   const { addToast } = useCyberRunnerStore();
+  const [txStatus, setTxStatus] = useState('');
+
+  const { data: hash, error: writeError, writeContract, isPending: isWritePending } = useWriteContract();
+
+  const { isLoading: isConfirming, isSuccess: isConfirmed, error: confirmError } = useWaitForTransactionReceipt({
+    hash,
+  });
+
+  useEffect(() => {
+    if (isWritePending) {
+      setTxStatus('Awaiting Wallet Approval...');
+    } else if (isConfirming) {
+      setTxStatus('Confirming on Arbitrum...');
+    } else if (isConfirmed) {
+      setTxStatus('Run Unlocked!');
+      addToast('TICKET PURCHASED', 'Your premium run is ready.', 'success');
+      setTimeout(() => {
+        onClose();
+      }, 1500);
+    } else {
+      setTxStatus('');
+    }
+  }, [isWritePending, isConfirming, isConfirmed, onClose, addToast]);
+
+  useEffect(() => {
+    if (writeError) {
+      console.error(writeError);
+      addToast('TRANSACTION CANCELLED', 'User rejected or error occurred', 'error');
+      setTxStatus('');
+      onClose();
+    }
+    if (confirmError) {
+      console.error(confirmError);
+      addToast('TRANSACTION FAILED', 'Failed to confirm on Arbitrum', 'error');
+      setTxStatus('');
+      onClose();
+    }
+  }, [writeError, confirmError, addToast, onClose]);
 
   const handleBuyTicket = () => {
-    setIsProcessing(true);
-    setTxStatus('Initiating Transaction...');
-
-    // Simulate transaction delay and timeout check
-    let timeElapsed = 0;
-    const interval = setInterval(() => {
-      timeElapsed += 1;
-      if (timeElapsed > 15) {
-        setTxStatus('Network Congested - Waiting for block confirmation...');
-      }
-    }, 1000);
-
-    // Mocking the Wagmi interaction for the demo
-    setTimeout(() => {
-      clearInterval(interval);
-      setIsProcessing(false);
-      setTxStatus('');
-      // Simulate an error like a MetaMask rejection (4001)
-      const isError = Math.random() > 0.5;
-
-      if (isError) {
-        // Handle User Rejection (4001)
-        addToast('TRANSACTION CANCELLED', 'User rejected the transaction in wallet', 'info');
-        onClose(); // Revert to unranked mode gracefully without freezing
-      } else {
-        onClose();
-        alert("Ticket Purchased Successfully!");
-      }
-    }, Math.random() * 20000 + 1000); // Random duration between 1s and 21s
+    try {
+      writeContract({
+        address: AXIM_CONTRACT_ADDRESS,
+        abi: ABI,
+        functionName: 'payFee',
+        value: parseEther('5'),
+      });
+    } catch (e) {
+      console.error(e);
+      addToast('ERROR', 'Failed to initiate transaction', 'error');
+    }
   };
+
+  const isProcessing = isWritePending || isConfirming || isConfirmed;
 
   return (
     <div

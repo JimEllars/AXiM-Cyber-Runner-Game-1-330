@@ -18,11 +18,13 @@ export const useCyberRunnerStore = create(
       hasShield: false,
       hasMagnet: false,
       crtEnabled: true,
+      isMuted: false,
       selectedSkinId: 'default',
       selectedThemeId: 'cyberpunk',
       playerAddress: '0x' + Math.random().toString(16).slice(2, 10) + '...',
       runHash: null,
       startTime: null,
+      newlyUnlockedChallenges: [],
       ticketStatus: { freeRunAvailable: true },
       toasts: [],
       
@@ -83,12 +85,13 @@ export const useCyberRunnerStore = create(
           hasShield: false,
           hasMagnet: false,
           runHash: crypto.randomUUID(),
-          startTime: Date.now()
+          startTime: Date.now(),
+          newlyUnlockedChallenges: []
         });
       },
       
-      endGame: async () => {
-        const { score, distance, powerNodes, multiplier, runHash, startTime, playerAddress, gameState, challengeProgress } = get();
+            endGame: async () => {
+        const { score, distance, powerNodes, multiplier, runHash, startTime, playerAddress, gameState, challengeProgress, newlyUnlockedChallenges } = get();
         if (gameState !== 'PLAYING') return;
         
         set({ gameState: 'SUBMITTING', score: score * get().streakMultiplier });
@@ -107,7 +110,10 @@ export const useCyberRunnerStore = create(
 
         set({ challengeProgress: newProgress });
 
-        try {
+                try {
+          if (newlyUnlockedChallenges && newlyUnlockedChallenges.length > 0) {
+            runnerApi.syncAchievements({ playerAddress, unlockedIds: newlyUnlockedChallenges }).catch(e => console.error("Sync error", e));
+          }
           await runnerApi.submitRun({
             playerAddress,
             score: Math.floor(score * get().streakMultiplier),
@@ -124,14 +130,21 @@ export const useCyberRunnerStore = create(
         }
       },
 
-      checkChallengeThresholds: (oldProgress, newProgress) => {
+            checkChallengeThresholds: (oldProgress, newProgress) => {
+        const newlyUnlocked = [];
         WEEKLY_CHALLENGES.forEach(c => {
           const oldVal = get().getProgressValue(c.type, oldProgress);
           const newVal = get().getProgressValue(c.type, newProgress);
           if (oldVal < c.goal && newVal >= c.goal) {
             get().addToast('CHALLENGE COMPLETE', c.title, 'achievement');
+            newlyUnlocked.push(c.id);
           }
         });
+        if (newlyUnlocked.length > 0) {
+          set(state => ({
+            newlyUnlockedChallenges: [...(state.newlyUnlockedChallenges || []), ...newlyUnlocked]
+          }));
+        }
       },
 
       getProgressValue: (type, progress) => {
@@ -199,7 +212,8 @@ export const useCyberRunnerStore = create(
         };
       }),
 
-      toggleCrt: () => set((state) => ({ crtEnabled: !state.crtEnabled }))
+      toggleCrt: () => set((state) => ({ crtEnabled: !state.crtEnabled })),
+      toggleMute: () => set((state) => ({ isMuted: !state.isMuted }))
     }),
     {
       name: 'axim-runner-storage',
@@ -209,6 +223,7 @@ export const useCyberRunnerStore = create(
         playerAddress: state.playerAddress,
         selectedSkinId: state.selectedSkinId,
         selectedThemeId: state.selectedThemeId,
+        isMuted: state.isMuted,
         crtEnabled: state.crtEnabled,
         score: state.score,
         distance: state.distance,

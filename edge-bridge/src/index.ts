@@ -230,6 +230,51 @@ export default {
       return response;
     }
 
+
+    // 4. Achievement Sync
+    if (request.method === "POST" && url.pathname === "/api/v1/runner/sync-achievements") {
+      if (!checkRateLimit(ip)) {
+        return new Response(JSON.stringify({ success: true, status: "rate_limited" }), {
+          status: 200,
+          headers: { ...CORS_HEADERS, "Content-Type": "application/json" }
+        });
+      }
+
+      try {
+        const payload = await request.json() as any;
+        const { playerAddress, unlockedIds } = payload;
+
+        if (!playerAddress || !Array.isArray(unlockedIds) || unlockedIds.length === 0) {
+          return new Response(JSON.stringify({ error: "Invalid payload" }), { status: 400, headers: CORS_HEADERS });
+        }
+
+        const rows = unlockedIds.map(id => ({
+          player_address: playerAddress.toLowerCase(),
+          challenge_id: id,
+          unlocked_at: new Date().toISOString()
+        }));
+
+        ctx.waitUntil(
+          fetch(`${env.SUPABASE_URL}/rest/v1/achievements_log`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${env.SUPABASE_SERVICE_KEY}`,
+              "apikey": env.SUPABASE_SERVICE_KEY,
+            },
+            body: JSON.stringify(rows)
+          }).catch(err => console.error("sync-achievements error:", err))
+        );
+
+        return new Response(JSON.stringify({ success: true }), {
+          status: 200,
+          headers: { ...CORS_HEADERS, "Content-Type": "application/json" }
+        });
+      } catch (err: any) {
+        return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: CORS_HEADERS });
+      }
+    }
+
     return new Response("Not Found", { status: 404 });
   }
 };
