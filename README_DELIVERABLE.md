@@ -41,3 +41,25 @@ The updates for Sprint 5 have been implemented with a focus on stability, robust
 ### Media Handling
 - [ ] Clear browser cache/cookies entirely, then load the game.
 - [ ] Check console warnings - Ensure there are no "AudioContext Autoplay" block warnings appearing from the initial rendering frame.
+
+## Testing Instructions for QA
+
+### 1. Cloudflare Rate Limiting
+- Submit multiple scores rapidly to the `/api/v1/runner/submit-run` endpoint.
+- After the 10th request within a minute, observe that the API returns a `200 OK` with `{ status: "score_verified_rate_limited" }` but drops the write to the database.
+
+### 2. Mobile Touch Controls
+- Open the application on a mobile device or use the browser's developer tools mobile emulation.
+- Tap the **right half of the game canvas** to trigger a jump (and tap again for a double jump).
+- Tap the **left half of the game canvas** and quickly swipe downwards to trigger the slide mechanic.
+- Verify that touch events correctly prevent the browser from scrolling by dragging on the canvas.
+
+### 3. Graceful Web3 Errors
+- Proceed to play until the daily free run is exhausted, triggering the Token Gate Modal.
+- Click "Pay 5.00 AXiM" to simulate buying a ticket.
+- Because Wagmi is mocked, a 50% chance dictates whether the transaction fails (simulating a `4001` MetaMask rejection) or succeeds.
+- When an error occurs, check that a Toast message reads "TRANSACTION CANCELLED", and the modal gracefully dismisses back to unranked mode without hanging/freezing the game.
+
+### 4. Memory/Resource Cleanup
+- Use the Performance/Memory tab in DevTools to ensure closing the game properly dereferences touch event listeners.
+- Verify the background synth base loop halts appropriately when ending a game instead of running multiple detached intervals.

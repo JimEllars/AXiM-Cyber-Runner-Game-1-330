@@ -12,9 +12,33 @@ const CORS_HEADERS = {
   "Cache-Control": "no-store, private"
 };
 
+
+// Simple in-memory rate limiter per isolate (1 minute window)
+const rateLimitMap = new Map<string, { count: number, resetAt: number }>();
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const record = rateLimitMap.get(ip);
+
+  if (!record || now > record.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + 60000 });
+    return true;
+  }
+
+  if (record.count >= 10) {
+    return false;
+  }
+
+  record.count += 1;
+  return true;
+}
+
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
+
+    const ip = request.headers.get("cf-connecting-ip") || "unknown";
+
 
     if (request.method === "OPTIONS") {
       return new Response(null, { headers: CORS_HEADERS });
@@ -42,6 +66,15 @@ export default {
     // 2. Score Ingestion & Anti-Cheat Validation
     if (request.method === "POST" && url.pathname === "/api/v1/runner/submit-run") {
       const startTime = Date.now();
+
+        if (!checkRateLimit(ip)) {
+          // Rate limit exceeded: silently drop write, return 200 OK
+          return new Response(JSON.stringify({ success: true, status: "score_verified_rate_limited" }), {
+            status: 200,
+            headers: { ...CORS_HEADERS, "Content-Type": "application/json" }
+          });
+        }
+
       try {
         const payload = await request.json() as any;
         const { playerAddress, score, distance, powerNodes, multiplier, elapsedTimeSec, runHash } = payload;

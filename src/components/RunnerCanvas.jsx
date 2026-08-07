@@ -70,6 +70,65 @@ const RunnerCanvas = () => {
     window.addEventListener('keydown', handleInput);
     window.addEventListener('keyup', handleInputUp);
 
+    const handleTouchStart = (e) => {
+      if (gameState !== 'PLAYING') return;
+      // Prevent scrolling
+      e.preventDefault();
+
+      const touch = e.touches[0];
+      const rect = canvas.getBoundingClientRect();
+      const touchX = touch.clientX - rect.left;
+
+      // Tap on the right side of the screen -> Jump
+      if (touchX > rect.width / 2) {
+        if (player.jumpCount < player.maxJumps) {
+          player.vy = jumpForce;
+          player.jumpCount++;
+          player.isSliding = false;
+          audioEngine.playJump();
+        }
+      } else {
+        // Tap on left side to register start Touch Y for sliding
+        startTouchY = touch.clientY;
+      }
+    };
+
+    let startTouchY = null;
+
+    const handleTouchMove = (e) => {
+      if (gameState !== 'PLAYING') return;
+      e.preventDefault(); // Prevent scrolling
+
+      if (startTouchY !== null) {
+        const currentY = e.touches[0].clientY;
+        const diffY = currentY - startTouchY;
+
+        // Swipe down -> Slide
+        if (diffY > 30) {
+          player.isSliding = true;
+          player.h = 25;
+          player.y = 275;
+          startTouchY = null; // Reset
+        }
+      }
+    };
+
+    const handleTouchEnd = (e) => {
+      if (gameState !== 'PLAYING') return;
+      e.preventDefault(); // Prevent scrolling
+      startTouchY = null;
+
+      // Reset sliding
+      player.isSliding = false;
+      player.h = 50;
+      player.y = 250;
+    };
+
+    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+    canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+    canvas.addEventListener('touchcancel', handleTouchEnd, { passive: false });
+
     const spawnObstacle = () => {
       if (Math.random() > 0.985) {
         const isHigh = Math.random() > 0.5;
@@ -313,6 +372,11 @@ const RunnerCanvas = () => {
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener('keydown', handleInput);
       window.removeEventListener('keyup', handleInputUp);
+      canvas.removeEventListener('touchstart', handleTouchStart);
+      canvas.removeEventListener('touchmove', handleTouchMove);
+      canvas.removeEventListener('touchend', handleTouchEnd);
+      canvas.removeEventListener('touchcancel', handleTouchEnd);
+      audioEngine.stopBassline();
     };
   }, [gameState, getSelectedSkin, getSelectedTheme]);
 
