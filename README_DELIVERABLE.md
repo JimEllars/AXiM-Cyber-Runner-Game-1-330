@@ -102,3 +102,12 @@ To test the `sessionStorage` persist hydration and recovery:
 1. **CSP Headers**: To test the Cloudflare security headers, run a production build and deploy to a Cloudflare Pages preview environment. Verify via `curl -I <preview_url>` or browser DevTools (Network > Headers) that `Content-Security-Policy`, `X-Frame-Options`, `X-Content-Type-Options`, and `Strict-Transport-Security` are present as defined in `public/_headers`.
 2. **Web Worker Integration**: Open the browser Developer Tools -> Performance/Network tabs. You will see `physicsWorker.js` loaded as a Web Worker. Open the console, start the game, and note that UI remains perfectly responsive and game runs smoothly since the physics calculations and updates are offloaded.
 3. **PWA Integration**: Check Developer Tools -> Application -> Manifest to ensure `manifest.json` is properly parsed with properties set (e.g. `AXiM Cyber-Runner`, colors, and `standalone` mode).
+
+### Testing Service Worker Offline Mode
+1. Open the application in Chrome.
+2. Open Chrome DevTools (`F12` or `Ctrl+Shift+I`).
+3. Navigate to the **Application** tab.
+4. Under **Application** on the left sidebar, click on **Service Workers**.
+5. Ensure the Service Worker for the application is registered and active.
+6. Check the **Offline** box under the "Network" section within the Service Workers view (or go to the **Network** tab and select "Offline" from the throttling dropdown).
+7. Refresh the page. The application should still load its static assets (HTML, CSS, JS) via the Service Worker cache, proving offline capability.
