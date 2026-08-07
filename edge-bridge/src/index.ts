@@ -41,16 +41,58 @@ export default {
 
     // 2. Score Ingestion & Anti-Cheat Validation
     if (request.method === "POST" && url.pathname === "/api/v1/runner/submit-run") {
+      const startTime = Date.now();
       try {
         const payload = await request.json() as any;
         const { playerAddress, score, distance, powerNodes, multiplier, elapsedTimeSec, runHash } = payload;
 
         // Anti-Cheat Physics Boundary Check
         const maxPossibleScore = Math.floor((distance * 10 + (powerNodes * 50)) * multiplier);
+        let validationStatus = "valid";
+        let isFlagged = false;
         if (score > maxPossibleScore * 1.05) { // 5% variance buffer for latency
-          return new Response(JSON.stringify({ success: false, reason: "SCORE_BOUNDS_EXCEEDED" }), {
-            status: 422,
-            headers: CORS_HEADERS
+          validationStatus = "invalid_score_bounds";
+          isFlagged = true;
+          // Route flagged runs to hitl_audit_logs silently
+          ctx.waitUntil(
+            fetch(`${env.SUPABASE_URL}/rest/v1/hitl_audit_logs`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${env.SUPABASE_SERVICE_KEY}`,
+                "apikey": env.SUPABASE_SERVICE_KEY,
+              },
+              body: JSON.stringify([{
+                player_address: playerAddress.toLowerCase(),
+                reason: "SCORE_BOUNDS_EXCEEDED",
+                run_hash: runHash,
+                flagged_at: new Date().toISOString(),
+                payload: payload
+              }])
+            }).catch(err => console.error("hitl_audit_logs error:", err))
+          );
+
+          const latency = Date.now() - startTime;
+          ctx.waitUntil(
+            fetch(`${env.SUPABASE_URL}/rest/v1/telemetry_logs`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${env.SUPABASE_SERVICE_KEY}`,
+                "apikey": env.SUPABASE_SERVICE_KEY,
+              },
+              body: JSON.stringify([{
+                run_hash: runHash,
+                latency_ms: latency,
+                validation_status: validationStatus,
+                created_at: new Date().toISOString()
+              }])
+            }).catch(err => console.error("telemetry_logs error:", err))
+          );
+
+          return new Response(JSON.stringify({ success: true, status: "score_flagged_internally" }), {
+            status: 200,
+            headers: { ...CORS_HEADERS, "Content-Type": "application/json" }
           });
         }
 
@@ -80,6 +122,24 @@ export default {
         // Mark Daily Free Run Consumed
         const today = new Date().toISOString().split("T")[0];
         await env.RUNNER_STATE.put(`daily_run:${playerAddress.toLowerCase()}:${today}`, "1", { expirationTtl: 86400 });
+
+        const latency = Date.now() - startTime;
+        ctx.waitUntil(
+          fetch(`${env.SUPABASE_URL}/rest/v1/telemetry_logs`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${env.SUPABASE_SERVICE_KEY}`,
+              "apikey": env.SUPABASE_SERVICE_KEY,
+            },
+            body: JSON.stringify([{
+              run_hash: runHash,
+              latency_ms: latency,
+              validation_status: validationStatus,
+              created_at: new Date().toISOString()
+            }])
+          }).catch(err => console.error("telemetry_logs error:", err))
+        );
 
         return new Response(JSON.stringify({ success: true, status: "score_verified" }), {
           status: 200,

@@ -14,7 +14,7 @@ import SafeIcon from './common/SafeIcon';
 const { FiCpu, FiZap, FiActivity, FiLayers, FiTarget, FiMonitor } = FiIcons;
 
 function App() {
-  const { crtEnabled, initializeSession, ticketStatus } = useCyberRunnerStore();
+  const { crtEnabled, initializeSession, ticketStatus, setIsPaused } = useCyberRunnerStore();
   const [showGate, setShowGate] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showSkins, setShowSkins] = useState(false);
@@ -24,6 +24,11 @@ function App() {
   useEffect(() => {
     initializeSession();
   }, []);
+
+  useEffect(() => {
+    const anyModalOpen = showGate || showLeaderboard || showSkins || showChallenges || showThemes;
+    setIsPaused(anyModalOpen);
+  }, [showGate, showLeaderboard, showSkins, showChallenges, showThemes, setIsPaused]);
 
   return (
     <div className={`min-h-screen bg-neon-bg text-white flex flex-col relative overflow-hidden select-none ${crtEnabled ? 'crt-scanlines' : ''}`}>

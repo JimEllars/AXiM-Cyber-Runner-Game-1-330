@@ -38,11 +38,17 @@ const LeaderboardModal = ({ isOpen, onClose }) => {
     if (isOpen) fetchLeaders();
   }, [isOpen]);
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 backdrop-blur-md">
-      <div className="bg-neon-bg border-2 border-neon-cyan p-6 max-w-lg w-full rounded-lg shadow-[0_0_40px_rgba(0,240,255,0.3)] font-mono">
+    <div
+      className={`fixed inset-0 bg-black/90 flex items-center justify-center z-50 backdrop-blur-md transition-opacity duration-300 ${
+        isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+      }`}
+    >
+      <div
+        className={`bg-neon-bg border-2 border-neon-cyan p-6 max-w-lg w-full rounded-lg shadow-[0_0_40px_rgba(0,240,255,0.3)] font-mono transform transition-all duration-300 ${
+          isOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'
+        }`}
+      >
         <div className="flex justify-between items-center mb-6 border-b border-neon-cyan/30 pb-4">
           <h3 className="text-xl text-neon-cyan font-bold flex items-center gap-2">
             <SafeIcon icon={FiAward} /> CYBER-LEADERBOARD

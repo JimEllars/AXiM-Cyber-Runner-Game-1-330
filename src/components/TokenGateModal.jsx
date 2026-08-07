@@ -7,8 +7,6 @@ const { FiUnlock, FiX } = FiIcons;
 const TokenGateModal = ({ isOpen, onClose }) => {
   const [isProcessing, setIsProcessing] = useState(false);
 
-  if (!isOpen) return null;
-
   const handleBuyTicket = () => {
     setIsProcessing(true);
     // Mocking the Wagmi interaction for the demo
@@ -20,8 +18,16 @@ const TokenGateModal = ({ isOpen, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm">
-      <div className="bg-neon-bg border-2 border-neon-magenta p-6 max-w-md w-full rounded-lg shadow-[0_0_30px_rgba(255,0,127,0.4)] font-mono">
+    <div
+      className={`fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm transition-opacity duration-300 ${
+        isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+      }`}
+    >
+      <div
+        className={`bg-neon-bg border-2 border-neon-magenta p-6 max-w-md w-full rounded-lg shadow-[0_0_30px_rgba(255,0,127,0.4)] font-mono transform transition-all duration-300 ${
+          isOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'
+        }`}
+      >
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-xl text-neon-magenta font-bold">DAILY RUN EXHAUSTED</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-white">
