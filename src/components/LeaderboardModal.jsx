@@ -23,7 +23,7 @@ const LeaderboardModal = ({ isOpen, onClose }) => {
   const fetchLeaders = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/v1/runner/leaderboard');
+      const response = await fetch('api/v1/runner/leaderboard');
       if (!response.ok) throw new Error('Failed to fetch from edge cache');
       const data = await response.json();
       setLeaders(data || []);

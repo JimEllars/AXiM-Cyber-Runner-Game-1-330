@@ -3,7 +3,7 @@
  * Handles communication with the Cloudflare Edge Worker
  */
 
-const API_BASE = '/api/v1/runner';
+const API_BASE = 'api/v1/runner';
 
 const fetchWithTimeout = async (resource, options = {}) => {
   const { timeout = 3000 } = options;
