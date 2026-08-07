@@ -1,11 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import * as FiIcons from 'react-icons/fi';
+import { useCyberRunnerStore } from '../store/useCyberRunnerStore';
+import { generateShareData, nativeShare } from '../utils/shareHelpers';
 import SafeIcon from '../common/SafeIcon';
 
 
-const { FiAward, FiX, FiRefreshCw } = FiIcons;
+const { FiAward, FiX, FiRefreshCw, FiShare2 } = FiIcons;
 
 const LeaderboardModal = ({ isOpen, onClose }) => {
+  const { playerAddress, addToast, challengeProgress } = useCyberRunnerStore();
+
+  const handleShare = async (score) => {
+    const data = generateShareData(score, challengeProgress.streak_days);
+    const success = await nativeShare(data);
+    if (success) {
+      addToast('BROADCAST SUCCESS', 'Run data shared', 'info');
+    }
+  };
   const [leaders, setLeaders] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -87,13 +98,24 @@ const LeaderboardModal = ({ isOpen, onClose }) => {
                   {entry.player_address}
                 </span>
               </div>
-              <div className="flex flex-col items-end">
-                <span className="text-neon-cyan font-bold text-lg">
-                  {Math.floor(entry.score).toLocaleString()}
-                </span>
-                <span className="text-[10px] text-neon-magenta uppercase tracking-tighter">
-                  {entry.multiplier_applied}x Streak
-                </span>
+              <div className="flex items-center gap-4">
+                <div className="flex flex-col items-end">
+                  <span className="text-neon-cyan font-bold text-lg">
+                    {Math.floor(entry.score).toLocaleString()}
+                  </span>
+                  <span className="text-[10px] text-neon-magenta uppercase tracking-tighter">
+                    {entry.multiplier_applied}x Streak
+                  </span>
+                </div>
+                {entry.player_address === playerAddress && (
+                  <button
+                    onClick={() => handleShare(entry.score)}
+                    className="p-2 bg-white/5 border border-white/10 rounded hover:border-green-400 hover:text-green-400 transition-all text-gray-400"
+                    title="Share Score"
+                  >
+                    <SafeIcon icon={FiShare2} />
+                  </button>
+                )}
               </div>
             </div>
           )) : (
