@@ -62,7 +62,22 @@ const LeaderboardModal = ({ isOpen, onClose }) => {
         </div>
         
         <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-          {leaders.length > 0 ? leaders.map((entry, idx) => (
+
+          {loading ? (
+            Array.from({ length: 5 }).map((_, idx) => (
+              <div key={`skeleton-${idx}`} className="flex items-center justify-between p-3 bg-white/5 rounded border border-white/10 animate-pulse">
+                <div className="flex items-center gap-4">
+                  <div className="w-4 h-6 bg-gray-600 rounded"></div>
+                  <div className="w-32 h-4 bg-gray-600 rounded"></div>
+                </div>
+                <div className="flex flex-col items-end gap-1">
+                  <div className="w-16 h-6 bg-neon-cyan/50 rounded"></div>
+                  <div className="w-12 h-3 bg-neon-magenta/50 rounded"></div>
+                </div>
+              </div>
+            ))
+          ) : leaders.length > 0 ? leaders.map((entry, idx) => (
+
             <div key={entry.id || idx} className="flex items-center justify-between p-3 bg-white/5 rounded border border-white/10 hover:border-neon-cyan/50 transition-all group">
               <div className="flex items-center gap-4">
                 <span className={`font-bold text-lg ${idx === 0 ? 'text-neon-gold' : 'text-gray-500'}`}>

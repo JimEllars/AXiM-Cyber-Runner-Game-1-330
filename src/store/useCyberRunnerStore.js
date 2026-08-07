@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import { runnerApi } from '../services/api';
 import { SKINS } from '../data/skins';
 import { WEEKLY_CHALLENGES } from '../data/challenges';
@@ -181,13 +181,32 @@ export const useCyberRunnerStore = create(
     }),
     {
       name: 'axim-runner-storage',
+      storage: createJSONStorage(() => sessionStorage),
       partialize: (state) => ({ 
         challengeProgress: state.challengeProgress,
         playerAddress: state.playerAddress,
         selectedSkinId: state.selectedSkinId,
         selectedThemeId: state.selectedThemeId,
-        crtEnabled: state.crtEnabled
-      })
+        crtEnabled: state.crtEnabled,
+        score: state.score,
+        distance: state.distance,
+        gameState: state.gameState,
+        powerNodes: state.powerNodes,
+        multiplier: state.multiplier,
+        hasShield: state.hasShield,
+        hasMagnet: state.hasMagnet,
+        runHash: state.runHash,
+        startTime: state.startTime,
+        isPaused: state.isPaused
+      }),
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          if (state.gameState === 'PLAYING' || state.gameState === 'PAUSED') {
+            state.gameState = 'PAUSED';
+            state.isPaused = true;
+          }
+        }
+      }
     }
   )
 );
