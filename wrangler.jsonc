@@ -1,0 +1,16 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "axim-cyber-runner",
+  "pages_build_output_dir": "dist",
+  "compatibility_date": "2026-08-01",
+  "kv_namespaces": [
+    {
+      "binding": "RUNNER_STATE",
+      "id": "e95cf76c78bb4270974c870a30d35131"
+    }
+  ],
+  "vars": {
+    "VITE_AXIM_CORE_URL": "https://core.axim.us.com",
+    "VITE_ARBITRUM_CHAIN_ID": "42161"
+  }
+}

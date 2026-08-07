@@ -1,0 +1,5 @@
+# SPA Single-Page App Fallback
+/*    /index.html   200
+
+# Edge Worker API Proxy
+/api/v1/runner/*  https://cyber-runner-edge.jrellars.workers.dev/api/v1/runner/:splat  200!
