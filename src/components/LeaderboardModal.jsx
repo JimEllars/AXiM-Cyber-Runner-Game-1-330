@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
-import { supabase } from '../supabase/supabase';
+
 
 const { FiAward, FiX, FiRefreshCw } = FiIcons;
 
@@ -12,18 +12,13 @@ const LeaderboardModal = ({ isOpen, onClose }) => {
   const fetchLeaders = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('cyber_runner_runs')
-        .select('*')
-        .eq('status', 'completed')
-        .order('score', { ascending: false })
-        .limit(10);
-
-      if (error) throw error;
+      const response = await fetch('/api/v1/runner/leaderboard');
+      if (!response.ok) throw new Error('Failed to fetch from edge cache');
+      const data = await response.json();
       setLeaders(data || []);
     } catch (error) {
       console.error('Error fetching leaderboard:', error);
-      // Mock data if Supabase not connected
+      // Mock data if Edge is not connected
       setLeaders([
         { id: 1, player_address: '0x1234...abcd', score: 14850, multiplier_applied: 1.5 },
         { id: 2, player_address: '0x9988...ef01', score: 12400, multiplier_applied: 1.3 },

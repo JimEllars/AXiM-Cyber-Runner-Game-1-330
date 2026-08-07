@@ -183,6 +183,53 @@ export default {
       }
     }
 
+
+    // 3. Leaderboard Edge Cache
+    if (request.method === "GET" && url.pathname === "/api/v1/runner/leaderboard") {
+      const cacheUrl = new URL(request.url);
+      const cacheKey = new Request(cacheUrl.toString(), request);
+      const cache = caches.default;
+
+      let response = await cache.match(cacheKey);
+
+      if (!response) {
+        // Fetch from Supabase
+        const dbRes = await fetch(`${env.SUPABASE_URL}/rest/v1/cyber_runner_runs?status=eq.completed&order=score.desc&limit=100`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${env.SUPABASE_SERVICE_KEY}`,
+            "apikey": env.SUPABASE_SERVICE_KEY,
+          }
+        });
+
+        if (!dbRes.ok) {
+           return new Response(JSON.stringify({ error: "Failed to fetch leaderboard" }), { status: 500, headers: CORS_HEADERS });
+        }
+
+        const data = await dbRes.json();
+
+        response = new Response(JSON.stringify(data), {
+          status: 200,
+          headers: {
+            ...CORS_HEADERS,
+            "Content-Type": "application/json",
+            "Cache-Control": "public, max-age=60" // Cache for 60 seconds
+          }
+        });
+
+        ctx.waitUntil(cache.put(cacheKey, response.clone()));
+      } else {
+        // Ensure CORS headers are on cached response
+        response = new Response(response.body, response);
+        for (const [key, value] of Object.entries(CORS_HEADERS)) {
+           response.headers.set(key, value);
+        }
+      }
+
+      return response;
+    }
+
     return new Response("Not Found", { status: 404 });
   }
 };

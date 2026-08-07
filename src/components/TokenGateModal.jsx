@@ -7,13 +7,27 @@ const { FiUnlock, FiX } = FiIcons;
 
 const TokenGateModal = ({ isOpen, onClose }) => {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [txStatus, setTxStatus] = useState(''); // New state for tx status
   const { addToast } = useCyberRunnerStore();
 
   const handleBuyTicket = () => {
     setIsProcessing(true);
+    setTxStatus('Initiating Transaction...');
+
+    // Simulate transaction delay and timeout check
+    let timeElapsed = 0;
+    const interval = setInterval(() => {
+      timeElapsed += 1;
+      if (timeElapsed > 15) {
+        setTxStatus('Network Congested - Waiting for block confirmation...');
+      }
+    }, 1000);
+
     // Mocking the Wagmi interaction for the demo
     setTimeout(() => {
+      clearInterval(interval);
       setIsProcessing(false);
+      setTxStatus('');
       // Simulate an error like a MetaMask rejection (4001)
       const isError = Math.random() > 0.5;
 
@@ -25,7 +39,7 @@ const TokenGateModal = ({ isOpen, onClose }) => {
         onClose();
         alert("Ticket Purchased Successfully!");
       }
-    }, 1500);
+    }, Math.random() * 20000 + 1000); // Random duration between 1s and 21s
   };
 
   return (
@@ -41,7 +55,7 @@ const TokenGateModal = ({ isOpen, onClose }) => {
       >
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-xl text-neon-magenta font-bold">DAILY RUN EXHAUSTED</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-white">
+          <button onClick={onClose} className="text-gray-400 hover:text-white" disabled={isProcessing}>
             <SafeIcon icon={FiX} className="text-2xl" />
           </button>
         </div>
@@ -56,12 +70,13 @@ const TokenGateModal = ({ isOpen, onClose }) => {
             disabled={isProcessing}
             className="w-full py-3 bg-neon-magenta/20 border border-neon-magenta text-neon-magenta hover:bg-neon-magenta hover:text-white transition-all flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            {isProcessing ? 'Processing TX...' : <><SafeIcon icon={FiUnlock} /> Pay 5.00 AXiM</>}
+            {isProcessing ? txStatus || 'Processing TX...' : <><SafeIcon icon={FiUnlock} /> Pay 5.00 AXiM</>}
           </button>
           
           <button 
             onClick={onClose}
-            className="w-full py-3 border border-gray-600 text-gray-400 hover:bg-gray-800 transition-all text-sm"
+            disabled={isProcessing}
+            className="w-full py-3 border border-gray-600 text-gray-400 hover:bg-gray-800 transition-all text-sm disabled:opacity-50"
           >
             Play Practice Mode (Unranked)
           </button>

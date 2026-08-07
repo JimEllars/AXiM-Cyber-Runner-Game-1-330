@@ -63,3 +63,24 @@ The updates for Sprint 5 have been implemented with a focus on stability, robust
 ### 4. Memory/Resource Cleanup
 - Use the Performance/Memory tab in DevTools to ensure closing the game properly dereferences touch event listeners.
 - Verify the background synth base loop halts appropriately when ending a game instead of running multiple detached intervals.
+
+### Sprint 7 Deliverables Addendum
+
+#### Testing Error Boundary
+- Open `src/components/RunnerCanvas.jsx` or any child of `App.jsx` and deliberately throw a runtime error (e.g. `throw new Error("Simulated Crash");`) inside the render loop or a `useEffect`.
+- Refresh the page and confirm the red/cyan "System Glitch - Rebooting..." screen appears with the fallback action instead of a blank white screen.
+
+#### Testing Web3 Resilience (TokenGateModal)
+- Play a round until you lose and exhaust your free run. Wait for the `Token Gate` modal to appear.
+- Click `Pay 5.00 AXiM`. The mock transaction is randomized between 1 and 21 seconds.
+- Wait past the 15-second mark. The button text should change to `Network Congested - Waiting for block confirmation...`.
+
+#### Testing Edge Cache for Leaderboards
+- Open the Cloudflare Edge Worker local dev (or equivalent testing environment for `edge-bridge`).
+- Send a request to `GET /api/v1/runner/leaderboard`.
+- The first request should take normal API latency. Subsequent requests within 60 seconds should return significantly faster and serve the payload from the Cloudflare cache.
+
+#### Testing Dynamic Canvas Scaling
+- Emulate CPU throttling in Chrome DevTools (Performance -> CPU: 4x or 6x slowdown) to drop the FPS below 35.
+- Start a run. After 3 continuous seconds of low frame rates, verify via console logs that telemetry was emitted.
+- Visually verify that the CRT effect toggles off, and shadows disappear from obstacles/nodes automatically.
