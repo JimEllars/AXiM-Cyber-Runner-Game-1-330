@@ -96,3 +96,9 @@ To test the `sessionStorage` persist hydration and recovery:
 5. Once the page reloads, the game state will instantly be set to `PAUSED` and the UI should display the "Overlay" or pause state (with `isPaused: true`), preventing you from losing the game data.
 6. Check that your `score`, `distance`, `multiplier`, and collected `powerNodes` have been perfectly maintained.
 7. Close the pause overlay to resume the game and ensure it continues exactly where you left off.
+
+### Testing Web Worker & CSP Headers
+
+1. **CSP Headers**: To test the Cloudflare security headers, run a production build and deploy to a Cloudflare Pages preview environment. Verify via `curl -I <preview_url>` or browser DevTools (Network > Headers) that `Content-Security-Policy`, `X-Frame-Options`, `X-Content-Type-Options`, and `Strict-Transport-Security` are present as defined in `public/_headers`.
+2. **Web Worker Integration**: Open the browser Developer Tools -> Performance/Network tabs. You will see `physicsWorker.js` loaded as a Web Worker. Open the console, start the game, and note that UI remains perfectly responsive and game runs smoothly since the physics calculations and updates are offloaded.
+3. **PWA Integration**: Check Developer Tools -> Application -> Manifest to ensure `manifest.json` is properly parsed with properties set (e.g. `AXiM Cyber-Runner`, colors, and `standalone` mode).

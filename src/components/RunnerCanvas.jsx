@@ -10,9 +10,6 @@ const RunnerCanvas = () => {
   } = useCyberRunnerStore();
 
   useEffect(() => {
-
-    // Cache styles
-
     const skin = getSelectedSkin();
     const theme = getSelectedTheme();
 
@@ -29,162 +26,129 @@ const RunnerCanvas = () => {
       skinGlow: skin.glowIntensity,
       themeId: theme.id
     };
-const canvas = canvasRef.current;
+
+    const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     let animationFrameId;
-    let startTime = Date.now();
-    let lastTime = startTime;
+    let lastTime = Date.now();
     
-
-    let player = {
-      x: 50,
-      y: 250,
-      vy: 0,
-      jumpCount: 0,
-      maxJumps: 2,
-      isSliding: false,
-      w: 30,
-      h: 50,
-      trail: []
+    // Render State
+    let renderState = {
+        player: {
+            x: 50,
+            y: 250,
+            w: 30,
+            h: 50,
+            isSliding: false,
+            trail: []
+        },
+        obstacles: [],
+        nodes: [],
+        speed: 300
     };
 
-    let obstacles = [];
-    let nodes = [];
-    
-    // Initialize theme-specific parallax
     let backgroundLayers = theme.parallaxLayers.map(l => ({ ...l, x: 0 }));
-    
     let distance = 0;
     let currentScore = score;
-    const gravity = 1400;
-    const jumpForce = -550;
+    let workerBusy = false;
+    let accumulatedDt = 0;
+
+    const worker = new Worker(new URL('../workers/physicsWorker.js', import.meta.url), { type: 'module' });
+    worker.postMessage({ type: 'INIT' });
+
+    worker.onmessage = (e) => {
+        if (e.data.type === 'UPDATE_RESULT') {
+            const result = e.data.payload;
+
+            // update render state
+            renderState.player = { ...renderState.player, ...result.player };
+            renderState.obstacles = result.obstacles;
+            renderState.nodes = result.nodes;
+            renderState.speed = result.speed;
+
+            if (result.hitObstacle) {
+                audioEngine.playCrash();
+                hitObstacle();
+            }
+
+            for (let t of result.collectedNodes) {
+                audioEngine.playCollect();
+                collectNode(t);
+            }
+
+            distance += (result.speed * result.dt) / 10;
+            currentScore += result.dt * 15 * multiplier;
+
+            if (Math.floor(distance) % 5 === 0) {
+                updateDistance(Math.floor(distance), Math.floor(currentScore));
+            }
+            workerBusy = false;
+        } else if (e.data.type === 'PLAY_SOUND') {
+            if (e.data.payload === 'JUMP') {
+                audioEngine.playJump();
+            }
+        }
+    };
 
     const handleInput = (e) => {
       if (gameState !== 'PLAYING') return;
       if (e.code === 'Space' || e.code === 'ArrowUp') {
-        if (player.jumpCount < player.maxJumps) {
-          player.vy = jumpForce;
-          player.jumpCount++;
-          player.isSliding = false;
-          audioEngine.playJump();
-        }
+          worker.postMessage({ type: 'JUMP' });
       }
       if (e.code === 'ArrowDown') {
-        player.isSliding = true;
-        player.h = 25;
-        player.y = 275;
+          worker.postMessage({ type: 'SLIDE_START' });
       }
     };
 
     const handleInputUp = (e) => {
       if (e.code === 'ArrowDown') {
-        player.isSliding = false;
-        player.h = 50;
-        player.y = 250;
+          worker.postMessage({ type: 'SLIDE_END' });
       }
     };
 
     window.addEventListener('keydown', handleInput);
     window.addEventListener('keyup', handleInputUp);
 
+    let startTouchY = null;
+
     const handleTouchStart = (e) => {
       if (gameState !== 'PLAYING') return;
-      // Prevent scrolling
       e.preventDefault();
-
       const touch = e.touches[0];
       const rect = canvas.getBoundingClientRect();
       const touchX = touch.clientX - rect.left;
 
-      // Tap on the right side of the screen -> Jump
       if (touchX > rect.width / 2) {
-        if (player.jumpCount < player.maxJumps) {
-          player.vy = jumpForce;
-          player.jumpCount++;
-          player.isSliding = false;
-          audioEngine.playJump();
-        }
+          worker.postMessage({ type: 'JUMP' });
       } else {
-        // Tap on left side to register start Touch Y for sliding
         startTouchY = touch.clientY;
       }
     };
 
-    let startTouchY = null;
-
     const handleTouchMove = (e) => {
       if (gameState !== 'PLAYING') return;
-      e.preventDefault(); // Prevent scrolling
-
+      e.preventDefault();
       if (startTouchY !== null) {
         const currentY = e.touches[0].clientY;
         const diffY = currentY - startTouchY;
-
-        // Swipe down -> Slide
         if (diffY > 30) {
-          player.isSliding = true;
-          player.h = 25;
-          player.y = 275;
-          startTouchY = null; // Reset
+          worker.postMessage({ type: 'SLIDE_START' });
+          startTouchY = null;
         }
       }
     };
 
     const handleTouchEnd = (e) => {
       if (gameState !== 'PLAYING') return;
-      e.preventDefault(); // Prevent scrolling
+      e.preventDefault();
       startTouchY = null;
-
-      // Reset sliding
-      player.isSliding = false;
-      player.h = 50;
-      player.y = 250;
+      worker.postMessage({ type: 'SLIDE_END' });
     };
 
     canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
     canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
     canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
     canvas.addEventListener('touchcancel', handleTouchEnd, { passive: false });
-
-    const spawnObstacle = () => {
-      if (Math.random() > 0.985) {
-        const isHigh = Math.random() > 0.5;
-        obstacles.push({
-          x: canvas.width,
-          y: isHigh ? 180 : 270,
-          w: 25,
-          h: 30,
-          type: isHigh ? 'high' : 'low'
-        });
-      }
-    };
-
-    const spawnNode = () => {
-      if (Math.random() > 0.98) {
-        const rand = Math.random();
-        let type = 'cyan';
-        if (rand > 0.95) type = 'shield';
-        else if (rand > 0.90) type = 'magnet';
-        else if (rand > 0.75) type = 'gold';
-
-        nodes.push({
-          x: canvas.width,
-          y: 120 + Math.random() * 150,
-          w: 18,
-          h: 18,
-          type
-        });
-      }
-    };
-
-const checkCollision = (rect1, rect2) => {
-      return (
-        rect1.x < rect2.x + rect2.w &&
-        rect1.x + rect1.w > rect2.x &&
-        rect1.y < rect2.y + rect2.h &&
-        rect1.y + rect1.h > rect2.y
-      );
-    };
 
     let fpsFrames = 0;
     let fpsLastTime = performance.now();
@@ -195,7 +159,6 @@ const checkCollision = (rect1, rect2) => {
       if (gameState !== 'PLAYING') return;
       const now = Date.now();
 
-      // FPS Calculation
       fpsFrames++;
       const currentPerfTime = performance.now();
       if (currentPerfTime > fpsLastTime + 1000) {
@@ -214,23 +177,23 @@ const checkCollision = (rect1, rect2) => {
             lowFpsTime = 0;
         }
       }
+
       const dt = Math.min((now - lastTime) / 1000, 0.1);
       lastTime = now;
-      const t = (now - startTime) / 1000;
 
-      const speed = 350 + 20 * Math.pow(t, 0.6);
+      accumulatedDt += dt;
 
-      player.vy += gravity * dt;
-      player.y += player.vy * dt;
-
-      if (player.y >= (player.isSliding ? 275 : 250)) {
-        player.y = player.isSliding ? 275 : 250;
-        player.vy = 0;
-        player.jumpCount = 0;
+      if (!workerBusy && accumulatedDt > 0) {
+          workerBusy = true;
+          worker.postMessage({
+              type: 'UPDATE',
+              payload: {
+                  hasMagnet,
+                  dt: accumulatedDt
+              }
+          });
+          accumulatedDt = 0;
       }
-
-      spawnObstacle();
-      spawnNode();
 
       // Background
       ctx.fillStyle = cachedStyles.themeBackground;
@@ -238,13 +201,11 @@ const checkCollision = (rect1, rect2) => {
 
       // Parallax Background Layers
       backgroundLayers.forEach(layer => {
-        layer.x -= speed * layer.speed * dt;
+        layer.x -= renderState.speed * layer.speed * dt;
         if (layer.x <= -canvas.width) layer.x = 0;
         ctx.fillStyle = layer.color;
         
-        // Render theme-specific background shapes
         if (cachedStyles.themeId === 'cosmos') {
-          // Draw stars/craters
           ctx.globalAlpha = 0.5;
           ctx.beginPath();
           ctx.arc(layer.x + 200, 50, 2, 0, Math.PI * 2);
@@ -264,7 +225,6 @@ const checkCollision = (rect1, rect2) => {
       ctx.lineTo(canvas.width, 300);
       ctx.stroke();
 
-      // Floor Perspective Grid
       for(let i=0; i<15; i++) {
         let xPos = (backgroundLayers[0].x * 2 + (i * 100)) % canvas.width;
         ctx.strokeStyle = cachedStyles.themeGrid;
@@ -274,14 +234,16 @@ const checkCollision = (rect1, rect2) => {
         ctx.stroke();
       }
 
+      const p = renderState.player;
+
       // Skin Effects
       if (cachedStyles.skinEffect === 'trail') {
-        player.trail.push({ x: player.x, y: player.y, h: player.h });
-        if (player.trail.length > 12) player.trail.shift();
-        player.trail.forEach((pos, idx) => {
+        p.trail.push({ x: p.x, y: p.y, h: p.h });
+        if (p.trail.length > 12) p.trail.shift();
+        p.trail.forEach((pos, idx) => {
           ctx.globalAlpha = idx / 12;
           ctx.fillStyle = cachedStyles.skinPrimary;
-          ctx.fillRect(pos.x - (12 - idx) * 3, pos.y, player.w, pos.h);
+          ctx.fillRect(pos.x - (12 - idx) * 3, pos.y, p.w, pos.h);
         });
         ctx.globalAlpha = 1.0;
       }
@@ -290,74 +252,51 @@ const checkCollision = (rect1, rect2) => {
         ctx.globalAlpha = 0.4 + Math.abs(Math.sin(now / 150)) * 0.3;
       }
 
-      // Render Player based on Theme
+      // Render Player
       ctx.shadowBlur = performanceMode ? 0 : (cachedStyles.skinEffect === 'pulse' ? cachedStyles.skinGlow + Math.sin(now / 200) * 12 : cachedStyles.skinGlow);
       ctx.shadowColor = cachedStyles.skinShadow;
       ctx.fillStyle = cachedStyles.skinPrimary;
       
       if (cachedStyles.themeId === 'torrent') {
-        // Draw Fish shape
         ctx.beginPath();
-        ctx.ellipse(player.x + 15, player.y + player.h/2, 15, player.h/2, 0, 0, Math.PI * 2);
+        ctx.ellipse(p.x + 15, p.y + p.h/2, 15, p.h/2, 0, 0, Math.PI * 2);
         ctx.fill();
       } else if (cachedStyles.themeId === 'cosmos') {
-        // Draw Alien shape
-        ctx.fillRect(player.x + 5, player.y, 20, player.h);
+        ctx.fillRect(p.x + 5, p.y, 20, p.h);
         ctx.beginPath();
-        ctx.arc(player.x + 15, player.y + 10, 10, 0, Math.PI * 2);
+        ctx.arc(p.x + 15, p.y + 10, 10, 0, Math.PI * 2);
         ctx.fill();
       } else {
-        ctx.fillRect(player.x, player.y, player.w, player.h);
+        ctx.fillRect(p.x, p.y, p.w, p.h);
       }
       
       ctx.globalAlpha = 1.0;
       ctx.shadowBlur = 0;
 
       // Obstacles
-      for (let i = obstacles.length - 1; i >= 0; i--) {
-        let obs = obstacles[i];
-        obs.x -= speed * dt;
+      for (let i = renderState.obstacles.length - 1; i >= 0; i--) {
+        let obs = renderState.obstacles[i];
         
         ctx.shadowColor = cachedStyles.themeSecondary;
         ctx.shadowBlur = performanceMode ? 0 : 10;
         ctx.fillStyle = cachedStyles.themeSecondary;
         
         if (cachedStyles.themeId === 'torrent') {
-          // River Rocks / Logs
           ctx.beginPath();
           ctx.roundRect(obs.x, obs.y, obs.w, obs.h, 5);
           ctx.fill();
         } else if (cachedStyles.themeId === 'cosmos') {
-          // Asteroids
           ctx.beginPath();
           ctx.arc(obs.x + obs.w/2, obs.y + obs.h/2, obs.w/2, 0, Math.PI * 2);
           ctx.fill();
         } else {
           ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
         }
-
-        if (checkCollision(player, obs)) {
-          audioEngine.playCrash();
-          hitObstacle();
-        }
-        if (obs.x + obs.w < 0) obstacles.splice(i, 1);
       }
 
       // Nodes
-      for (let i = nodes.length - 1; i >= 0; i--) {
-        let node = nodes[i];
-        
-        if (hasMagnet) {
-          const dx = player.x - node.x;
-          const dy = player.y - node.y;
-          const dist = Math.sqrt(dx*dx + dy*dy);
-          if (dist < 200) {
-            node.x += (dx / dist) * 400 * dt;
-            node.y += (dy / dist) * 400 * dt;
-          }
-        }
-
-        node.x -= speed * dt;
+      for (let i = renderState.nodes.length - 1; i >= 0; i--) {
+        let node = renderState.nodes[i];
         
         let nodeColor = cachedStyles.themePrimary;
         if (node.type === 'gold') nodeColor = cachedStyles.themeAccent;
@@ -369,7 +308,6 @@ const checkCollision = (rect1, rect2) => {
         ctx.fillStyle = nodeColor;
         
         if (cachedStyles.themeId === 'torrent') {
-          // Bubbles
           ctx.strokeStyle = nodeColor;
           ctx.lineWidth = 2;
           ctx.beginPath();
@@ -383,21 +321,6 @@ const checkCollision = (rect1, rect2) => {
           ctx.arc(node.x + node.w / 2, node.y + node.h / 2, node.w / 2, 0, Math.PI * 2);
           ctx.fill();
         }
-
-        if (checkCollision(player, node)) {
-          audioEngine.playCollect();
-          collectNode(node.type);
-          nodes.splice(i, 1);
-        } else if (node.x + node.w < 0) {
-          nodes.splice(i, 1);
-        }
-      }
-
-      distance += (speed * dt) / 10;
-      currentScore += dt * 15 * multiplier;
-
-      if (Math.floor(distance) % 5 === 0) {
-        updateDistance(Math.floor(distance), Math.floor(currentScore));
       }
 
       animationFrameId = requestAnimationFrame(render);
@@ -412,6 +335,7 @@ const checkCollision = (rect1, rect2) => {
 
     return () => {
       cancelAnimationFrame(animationFrameId);
+      worker.terminate();
       window.removeEventListener('keydown', handleInput);
       window.removeEventListener('keyup', handleInputUp);
       canvas.removeEventListener('touchstart', handleTouchStart);
