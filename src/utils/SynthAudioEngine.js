@@ -1,12 +1,17 @@
 class SynthAudioEngine {
   constructor() {
-    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    this.ctx = null;
     this.basslineOsc = null;
     this.isPlaying = false;
   }
 
-  playTone(freq, type = 'square', duration = 0.1, vol = 0.1) {
+  initCtx() {
+    if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
     if (this.ctx.state === 'suspended') this.ctx.resume();
+  }
+
+  playTone(freq, type = 'square', duration = 0.1, vol = 0.1) {
+    this.initCtx();
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     
@@ -41,7 +46,7 @@ class SynthAudioEngine {
   startBassline() {
     if (this.isPlaying) return;
     this.isPlaying = true;
-    if (this.ctx.state === 'suspended') this.ctx.resume();
+    this.initCtx();
     
     // Simple 120BPM pulse simulation
     this.bassInterval = setInterval(() => {

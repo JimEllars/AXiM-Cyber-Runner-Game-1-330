@@ -11,6 +11,7 @@ export const useCyberRunnerStore = create(
       gameState: 'IDLE',
       score: 0,
       distance: 0,
+      isPaused: false,
       powerNodes: 0,
       multiplier: 1.0,
       hasShield: false,
@@ -43,6 +44,8 @@ export const useCyberRunnerStore = create(
       removeToast: (id) => set((state) => ({
         toasts: state.toasts.filter(t => t.id !== id)
       })),
+
+      setIsPaused: (paused) => set({ isPaused: paused }),
 
       setSkin: (skinId) => set({ selectedSkinId: skinId }),
       setTheme: (themeId) => {
@@ -180,6 +183,7 @@ export const useCyberRunnerStore = create(
       name: 'axim-runner-storage',
       partialize: (state) => ({ 
         challengeProgress: state.challengeProgress,
+        playerAddress: state.playerAddress,
         selectedSkinId: state.selectedSkinId,
         selectedThemeId: state.selectedThemeId,
         crtEnabled: state.crtEnabled

@@ -5,7 +5,7 @@ import { audioEngine } from '../utils/SynthAudioEngine';
 const RunnerCanvas = () => {
   const canvasRef = useRef(null);
   const { 
-    gameState, hitObstacle, collectNode, updateDistance, 
+    gameState, hitObstacle, collectNode, updateDistance, isPaused,
     score, multiplier, getSelectedSkin, getSelectedTheme, hasMagnet 
   } = useCyberRunnerStore();
 
