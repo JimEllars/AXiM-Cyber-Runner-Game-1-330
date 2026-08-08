@@ -34,6 +34,85 @@ function checkRateLimit(ip: string): boolean {
 }
 
 export default {
+
+  async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
+    try {
+      // Fetch top 10 weekly scores from Supabase
+      const dbRes = await fetch(`${env.SUPABASE_URL}/rest/v1/cyber_runner_runs?status=eq.completed&order=score.desc&limit=10`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${env.SUPABASE_SERVICE_KEY}`,
+          "apikey": env.SUPABASE_SERVICE_KEY,
+        }
+      });
+
+      if (!dbRes.ok) {
+        throw new Error("Failed to fetch top scores");
+      }
+
+      const topRuns = await dbRes.json();
+
+      // Fire webhook to AXiM Treasury API
+      const treasuryRes = await fetch(`${env.AXIM_TREASURY_URL}/api/v1/webhooks/runner-weekly-rewards`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${env.AXIM_TREASURY_SECRET}`,
+        },
+        body: JSON.stringify({
+          period: event.cron,
+          timestamp: event.scheduledTime,
+          winners: topRuns
+        })
+      });
+
+      if (!treasuryRes.ok) {
+        throw new Error("Failed to authorize treasury drop");
+      }
+
+      // Log successful distribution
+      ctx.waitUntil(
+        fetch(`${env.SUPABASE_URL}/rest/v1/telemetry_logs`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${env.SUPABASE_SERVICE_KEY}`,
+            "apikey": env.SUPABASE_SERVICE_KEY,
+          },
+          body: JSON.stringify([{
+            run_hash: "CRON_WEEKLY_REWARDS",
+            latency_ms: 0,
+            validation_status: "treasury_drop_success",
+            created_at: new Date().toISOString()
+          }])
+        }).catch(err => console.error("Cron telemetry error:", err))
+      );
+
+      console.log("Weekly rewards processed successfully.");
+    } catch (error) {
+      console.error("Cron Error: Weekly Rewards Drop failed:", error);
+
+      // Log failure distribution
+      ctx.waitUntil(
+        fetch(`${env.SUPABASE_URL}/rest/v1/telemetry_logs`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${env.SUPABASE_SERVICE_KEY}`,
+            "apikey": env.SUPABASE_SERVICE_KEY,
+          },
+          body: JSON.stringify([{
+            run_hash: "CRON_WEEKLY_REWARDS_ERROR",
+            latency_ms: 0,
+            validation_status: "treasury_drop_error",
+            created_at: new Date().toISOString()
+          }])
+        }).catch(err => console.error("Cron telemetry error:", err))
+      );
+    }
+  },
+
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
 
