@@ -46,13 +46,13 @@ const TokenGateModal = ({ isOpen, onClose }) => {
 
   useEffect(() => {
     if (writeError) {
-      console.error(writeError);
+      console.error(JSON.stringify({ level: "error", type: "cyber_runner_telemetry", data: { message: "TokenGateModal writeError", error: writeError?.message || writeError } }));
       addToast('TRANSACTION CANCELLED', 'User rejected or error occurred', 'error');
       setTxStatus('');
       onClose();
     }
     if (confirmError) {
-      console.error(confirmError);
+      console.error(JSON.stringify({ level: "error", type: "cyber_runner_telemetry", data: { message: "TokenGateModal confirmError", error: confirmError?.message || confirmError } }));
       addToast('TRANSACTION FAILED', 'Failed to confirm on Arbitrum', 'error');
       setTxStatus('');
       onClose();
@@ -68,7 +68,7 @@ const TokenGateModal = ({ isOpen, onClose }) => {
         value: parseEther('5'),
       });
     } catch (e) {
-      console.error(e);
+      console.error(JSON.stringify({ level: "error", type: "cyber_runner_telemetry", data: { message: "TokenGateModal exception", error: e?.message || e } }));
       addToast('ERROR', 'Failed to initiate transaction', 'error');
     }
   };
@@ -88,7 +88,7 @@ const TokenGateModal = ({ isOpen, onClose }) => {
       >
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-xl text-neon-magenta font-bold">DAILY RUN EXHAUSTED</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-white" disabled={isProcessing}>
+          <button onClick={onClose} className="text-gray-400 hover:text-white focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none" disabled={isProcessing} aria-label="Close modal" role="button">
             <SafeIcon icon={FiX} className="text-2xl" />
           </button>
         </div>
@@ -101,7 +101,7 @@ const TokenGateModal = ({ isOpen, onClose }) => {
           <button 
             onClick={handleBuyTicket}
             disabled={isProcessing}
-            className="w-full py-3 bg-neon-magenta/20 border border-neon-magenta text-neon-magenta hover:bg-neon-magenta hover:text-white transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full py-3 bg-neon-magenta/20 border border-neon-magenta text-neon-magenta hover:bg-neon-magenta hover:text-white transition-all flex items-center justify-center gap-2 disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
           >
             {isProcessing ? txStatus || 'Processing TX...' : <><SafeIcon icon={FiUnlock} /> Pay 5.00 AXiM</>}
           </button>
@@ -109,7 +109,7 @@ const TokenGateModal = ({ isOpen, onClose }) => {
           <button 
             onClick={onClose}
             disabled={isProcessing}
-            className="w-full py-3 border border-gray-600 text-gray-400 hover:bg-gray-800 transition-all text-sm disabled:opacity-50"
+            className="w-full py-3 border border-gray-600 text-gray-400 hover:bg-gray-800 transition-all text-sm disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
           >
             Play Practice Mode (Unranked)
           </button>

@@ -30,6 +30,22 @@ const RunnerCanvas = () => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     let animationFrameId;
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        if (gameState === 'PLAYING') {
+          useCyberRunnerStore.getState().setIsPaused(true);
+        }
+        if (audioEngine.ctx) {
+          audioEngine.ctx.suspend();
+        }
+      } else {
+        if (audioEngine.ctx) {
+          audioEngine.ctx.resume();
+        }
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
     let lastTime = Date.now();
     
     // Render State
@@ -171,7 +187,7 @@ const RunnerCanvas = () => {
             if (lowFpsTime >= 3000) {
                 performanceMode = true;
                 if (crtEnabled && toggleCrt) toggleCrt();
-                console.log("TELEMETRY: Low FPS detected. Enabling performance mode (disabling CRT and heavy shadows).");
+                console.log(JSON.stringify({ level: "info", type: "cyber_runner_telemetry", data: { message: "Low FPS detected. Enabling performance mode (disabling CRT and heavy shadows)." } }));
             }
         } else if (fps >= 35) {
             lowFpsTime = 0;
@@ -336,6 +352,8 @@ const RunnerCanvas = () => {
     return () => {
       cancelAnimationFrame(animationFrameId);
       worker.terminate();
+
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener('keydown', handleInput);
       window.removeEventListener('keyup', handleInputUp);
       canvas.removeEventListener('touchstart', handleTouchStart);

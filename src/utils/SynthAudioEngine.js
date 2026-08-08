@@ -96,3 +96,16 @@ const unlockAudio = () => {
 document.addEventListener('click', unlockAudio);
 document.addEventListener('keydown', unlockAudio);
 document.addEventListener('touchstart', unlockAudio);
+
+// Add suspend/resume methods
+SynthAudioEngine.prototype.suspend = function() {
+  if (this.ctx && this.ctx.state === 'running') {
+    this.ctx.suspend();
+  }
+};
+
+SynthAudioEngine.prototype.resume = function() {
+  if (this.ctx && this.ctx.state === 'suspended') {
+    this.ctx.resume();
+  }
+};

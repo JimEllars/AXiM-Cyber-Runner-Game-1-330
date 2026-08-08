@@ -47,6 +47,19 @@ function App() {
   }, []);
 
   useEffect(() => {
+    const handleMessage = (e) => {
+      // In a real implementation this might parse messages from a parent window
+      // console.log("Received message:", e.data);
+    };
+
+    window.addEventListener('message', handleMessage);
+
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
+  }, []);
+
+  useEffect(() => {
     const anyModalOpen = showGate || showLeaderboard || showSkins || showChallenges || showThemes || isMobilePortrait;
     setIsPaused(anyModalOpen);
   }, [showGate, showLeaderboard, showSkins, showChallenges, showThemes, isMobilePortrait, setIsPaused]);

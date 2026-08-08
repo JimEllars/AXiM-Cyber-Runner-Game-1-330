@@ -58,14 +58,14 @@ const RunnerHUD = () => {
           </div>
           <button
             onClick={toggleMute}
-            className="pointer-events-auto flex items-center justify-center p-2 rounded-full border border-gray-700 bg-black/40 hover:bg-gray-800 text-gray-400 hover:text-neon-cyan transition-colors"
-            title={isMuted ? 'Unmute Audio' : 'Mute Audio'}
+
+            title={isMuted ? 'Unmute Audio' : 'Mute Audio'} aria-label={isMuted ? 'Unmute Audio' : 'Mute Audio'} role="button" className="pointer-events-auto flex items-center justify-center p-2 rounded-full border border-gray-700 bg-black/40 hover:bg-gray-800 text-gray-400 hover:text-neon-cyan transition-colors focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
           >
             <SafeIcon icon={isMuted ? FiVolumeX : FiVolume2} size={16} />
           </button>
           <button 
             onClick={toggleCrt} 
-            className="pointer-events-auto text-[10px] border border-gray-700 px-2 py-1 rounded hover:bg-gray-800 text-gray-500 transition-colors uppercase tracking-widest"
+            className="pointer-events-auto text-[10px] border border-gray-700 px-2 py-1 rounded hover:bg-gray-800 text-gray-500 transition-colors uppercase tracking-widest focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
           >
             FILT: {crtEnabled ? 'CRT' : 'RAW'}
           </button>
@@ -78,7 +78,7 @@ const RunnerHUD = () => {
           <div className="flex flex-col items-center gap-6">
             <button 
               onClick={startGame}
-              className="group relative px-10 py-5 bg-neon-bg border-2 border-neon-cyan text-neon-cyan text-2xl font-bold uppercase tracking-[0.3em] hover:bg-neon-cyan hover:text-black transition-all shadow-[0_0_20px_rgba(0,240,255,0.4)] overflow-hidden"
+              className="group relative px-10 py-5 bg-neon-bg border-2 border-neon-cyan text-neon-cyan text-2xl font-bold uppercase tracking-[0.3em] hover:bg-neon-cyan hover:text-black transition-all shadow-[0_0_20px_rgba(0,240,255,0.4)] overflow-hidden focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
             >
               <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
               <span className="relative flex items-center gap-3"><SafeIcon icon={FiPlay} /> Start Run</span>
@@ -122,29 +122,29 @@ const RunnerHUD = () => {
               <div className="flex justify-center gap-3">
                 <button 
                   onClick={() => handleShare('twitter')}
-                  className="p-2.5 bg-white/5 border border-white/10 rounded hover:border-neon-cyan hover:text-neon-cyan transition-all group"
-                  title="Share on X"
+                  className="p-2.5 bg-white/5 border border-white/10 rounded hover:border-neon-cyan hover:text-neon-cyan transition-all group focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
+                  title="Share on X" aria-label="Share on X" role="button"
                 >
                   <SafeIcon icon={FiTwitter} />
                 </button>
                 <button 
                   onClick={() => handleShare('telegram')}
-                  className="p-2.5 bg-white/5 border border-white/10 rounded hover:border-blue-400 hover:text-blue-400 transition-all"
-                  title="Share on Telegram"
+                  className="p-2.5 bg-white/5 border border-white/10 rounded hover:border-blue-400 hover:text-blue-400 transition-all focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
+                  title="Share on Telegram" aria-label="Share on Telegram" role="button"
                 >
                   <SafeIcon icon={FiSend} />
                 </button>
                 <button 
                   onClick={() => handleShare('copy')}
-                  className="p-2.5 bg-white/5 border border-white/10 rounded hover:border-neon-gold hover:text-neon-gold transition-all"
-                  title="Copy Report"
+                  className="p-2.5 bg-white/5 border border-white/10 rounded hover:border-neon-gold hover:text-neon-gold transition-all focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
+                  title="Copy Report" aria-label="Copy Report" role="button"
                 >
                   <SafeIcon icon={FiCopy} />
                 </button>
                 <button
                   onClick={() => handleShare('native')}
-                  className="p-2.5 bg-white/5 border border-white/10 rounded hover:border-green-400 hover:text-green-400 transition-all"
-                  title="Share Score"
+                  className="p-2.5 bg-white/5 border border-white/10 rounded hover:border-green-400 hover:text-green-400 transition-all focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
+                  title="Share Score" aria-label="Share Score" role="button"
                 >
                   <SafeIcon icon={FiShare2} />
                 </button>
@@ -153,7 +153,7 @@ const RunnerHUD = () => {
 
             <button 
               onClick={startGame}
-              className="w-full px-8 py-3 bg-neon-magenta text-white font-bold uppercase text-sm tracking-widest hover:brightness-125 transition-all flex items-center justify-center gap-3 shadow-[0_0_20px_rgba(255,0,127,0.4)]"
+              className="w-full px-8 py-3 bg-neon-magenta text-white font-bold uppercase text-sm tracking-widest hover:brightness-125 transition-all flex items-center justify-center gap-3 shadow-[0_0_20px_rgba(255,0,127,0.4)] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
             >
               <SafeIcon icon={FiRefreshCw} /> Reboot System
             </button>
