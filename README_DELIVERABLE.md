@@ -61,3 +61,32 @@ To test the scheduled Weekly Rewards distribution locally using Wrangler:
 To test the `postMessage` event broadcasting:
 1. Wrap the app inside a local iframe test page or observe the console when running `npm run dev`.
 2. Play a game and let it finish. Upon reaching the "GAMEOVER" state, a payload `{ type: 'AXIM_RUNNER_EVENT', payload: { event: 'GAME_OVER', ... } }` is broadcast to `window.parent`.
+
+## Sprint 14 Delivery: Observability, SEO, & Memory Hardening
+
+### Features Implemented:
+1. **Strict JSON Observability Logging**: Formatted Edge Bridge telemetry output into strict JSON structure for centralized parsing tools (Datadog/Splunk).
+2. **Open Graph SEO**: Enriched standard Open Graph `<meta>` attributes to `index.html` improving discoverability and Twitter card previews.
+3. **Memory & Lifecycle Cleanup**: Bound the physics loop worker termination to React's unmount lifecycle. Utilized Page Visibility API to pause animations and AudioContext automatically when a user switches browser tabs, minimizing battery drain.
+4. **Accessibility (a11y)**: Fortified the Runner HUD and Modals with explicit `aria-label`, `role="button"`, and intuitive keyboard `:focus-visible` styling elements.
+
+### Testing Cloudflare Wrangler JSON Logs Locally
+To verify the structured JSON `stdout` logs emitted by the Edge Bridge:
+
+1. **Start Wrangler in local dev mode**:
+   Navigate to the `edge-bridge` directory and run:
+   ```bash
+   npx wrangler dev
+   ```
+2. **Trigger an Event / Endpoint**:
+   Use curl or Postman to submit an invalid request (or a successfully triggered cron event) designed to hit an error branch. For example, testing the hitl_audit_logs endpoint:
+   ```bash
+   curl -X POST http://localhost:8787/api/v1/runner/submit-run -H "Content-Type: application/json" -d '{"playerAddress": "0x123", "score": 99999999, "distance": 1, "powerNodes": 0, "multiplier": 1, "elapsedTimeSec": 10, "runHash": "test"}'
+   ```
+   *Note: Given the high score and low distance, this should trigger the score boundary validation check (which in our dev environment may fail if SUPABASE_URL isn't mocked/provided).*
+3. **Observe JSON Log Format in Terminal**:
+   Watch the running `wrangler dev` terminal. When an error is caught within a `ctx.waitUntil` execution (or cron success is logged), it will print a strict JSON object:
+   ```json
+   {"level": "error", "type": "cyber_runner_telemetry", "data": {"message": "hitl_audit_logs error", "error": "FetchError: ... "}}
+   ```
+   This confirms the observability requirement is fully active.

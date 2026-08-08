@@ -86,12 +86,12 @@ export default {
             validation_status: "treasury_drop_success",
             created_at: new Date().toISOString()
           }])
-        }).catch(err => console.error("Cron telemetry error:", err))
+        }).catch(err => console.error(JSON.stringify({ level: "error", type: "cyber_runner_telemetry", data: { message: "Cron telemetry error", error: err instanceof Error ? err.message : err } })))
       );
 
-      console.log("Weekly rewards processed successfully.");
+      console.log(JSON.stringify({ level: "info", type: "cyber_runner_telemetry", data: { message: "Weekly rewards processed successfully." } }));
     } catch (error) {
-      console.error("Cron Error: Weekly Rewards Drop failed:", error);
+      console.error(JSON.stringify({ level: "error", type: "cyber_runner_telemetry", data: { message: "Cron Error: Weekly Rewards Drop failed", error: error instanceof Error ? error.message : error } }));
 
       // Log failure distribution
       ctx.waitUntil(
@@ -108,7 +108,7 @@ export default {
             validation_status: "treasury_drop_error",
             created_at: new Date().toISOString()
           }])
-        }).catch(err => console.error("Cron telemetry error:", err))
+        }).catch(err => console.error(JSON.stringify({ level: "error", type: "cyber_runner_telemetry", data: { message: "Cron telemetry error", error: err instanceof Error ? err.message : err } })))
       );
     }
   },
@@ -181,7 +181,7 @@ export default {
                 flagged_at: new Date().toISOString(),
                 payload: payload
               }])
-            }).catch(err => console.error("hitl_audit_logs error:", err))
+            }).catch(err => console.error(JSON.stringify({ level: "error", type: "cyber_runner_telemetry", data: { message: "hitl_audit_logs error", error: err instanceof Error ? err.message : err } })))
           );
 
           const latency = Date.now() - startTime;
@@ -199,7 +199,7 @@ export default {
                 validation_status: validationStatus,
                 created_at: new Date().toISOString()
               }])
-            }).catch(err => console.error("telemetry_logs error:", err))
+            }).catch(err => console.error(JSON.stringify({ level: "error", type: "cyber_runner_telemetry", data: { message: "telemetry_logs error", error: err instanceof Error ? err.message : err } })))
           );
 
           return new Response(JSON.stringify({ success: true, status: "score_flagged_internally" }), {
@@ -250,7 +250,7 @@ export default {
               validation_status: validationStatus,
               created_at: new Date().toISOString()
             }])
-          }).catch(err => console.error("telemetry_logs error:", err))
+          }).catch(err => console.error(JSON.stringify({ level: "error", type: "cyber_runner_telemetry", data: { message: "telemetry_logs error", error: err instanceof Error ? err.message : err } })))
         );
 
         return new Response(JSON.stringify({ success: true, status: "score_verified" }), {
@@ -342,7 +342,7 @@ export default {
               "apikey": env.SUPABASE_SERVICE_KEY,
             },
             body: JSON.stringify(rows)
-          }).catch(err => console.error("sync-achievements error:", err))
+          }).catch(err => console.error(JSON.stringify({ level: "error", type: "cyber_runner_telemetry", data: { message: "sync-achievements error", error: err instanceof Error ? err.message : err } })))
         );
 
         return new Response(JSON.stringify({ success: true }), {
