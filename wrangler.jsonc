@@ -10,10 +10,14 @@
       "zone_id": "52097b74779e6705f5994d247fd17846"
     }
   ],
+
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
     "not_found_handling": "single-page-application",
     "run_worker_first": true
+  },
+  "triggers": {
+    "crons": ["0 0 * * 0"]
   }
 }

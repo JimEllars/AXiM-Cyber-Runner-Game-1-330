@@ -36,6 +36,17 @@ export const useCyberRunnerStore = create(
         last_play_date: null
       },
 
+      broadcastEvent: (payload) => {
+        try {
+          if (window.parent && window.parent !== window) {
+            const targetOrigin = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? '*' : 'https://axim.us.com';
+            window.parent.postMessage({ type: 'AXIM_RUNNER_EVENT', payload }, targetOrigin);
+          }
+        } catch (e) {
+          console.error("Broadcast error", e);
+        }
+      },
+
       addToast: (title, message, type = 'info') => {
         const id = Math.random().toString(36).substring(7);
         set((state) => ({ 
@@ -124,6 +135,12 @@ export const useCyberRunnerStore = create(
             runHash
           });
           set({ gameState: 'GAMEOVER' });
+          get().broadcastEvent({
+            event: 'GAME_OVER',
+            score: Math.floor(score * get().streakMultiplier),
+            distance: Math.floor(distance),
+            powerNodes
+          });
           get().initializeSession();
         } catch (error) {
           set({ gameState: 'GAMEOVER' });
@@ -138,6 +155,11 @@ export const useCyberRunnerStore = create(
           if (oldVal < c.goal && newVal >= c.goal) {
             get().addToast('CHALLENGE COMPLETE', c.title, 'achievement');
             newlyUnlocked.push(c.id);
+            get().broadcastEvent({
+              event: 'ACHIEVEMENT_UNLOCKED',
+              challengeId: c.id,
+              title: c.title
+            });
           }
         });
         if (newlyUnlocked.length > 0) {

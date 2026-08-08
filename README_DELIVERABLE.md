@@ -32,3 +32,32 @@ Alternatively, to strictly mock and test the \`navigator.share\` error handling 
 5. In your wallet extension, observe the transaction prompt.
     - If you **Reject** the transaction: The UI should correctly catch the rejection, display a toast notification ("TRANSACTION CANCELLED"), and safely revert to the unranked mode selection without breaking the flow.
     - If you **Confirm** the transaction: The UI should advance to "Confirming on Arbitrum...". Once the transaction is mined and verified on-chain, it should finally display "Run Unlocked!" and automatically dismiss the modal.
+
+## Sprint 13 Delivery: Iframe Telemetry & Cron Rewards
+
+### Testing Cloudflare Cron Trigger Locally
+To test the scheduled Weekly Rewards distribution locally using Wrangler:
+
+1. **Start Wrangler in Test Scheduled Mode**:
+   Ensure you have configured your `.dev.vars` (or standard environment variables) with `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `AXIM_TREASURY_URL`, and `AXIM_TREASURY_SECRET`.
+   Run the Edge Bridge worker locally by navigating to `edge-bridge` and executing:
+   ```bash
+   npx wrangler dev --test-scheduled
+   ```
+   *(Note: Make sure to run this command where your wrangler configuration file is located, e.g., the project root or the `edge-bridge` folder if it has one.)*
+
+2. **Trigger the Cron Job**:
+   Once the worker is running, you can manually trigger the scheduled event by making a request to the special internal endpoint provided by Wrangler:
+   ```bash
+   curl "http://localhost:8787/__scheduled?cron=0+0+*+*+0"
+   ```
+
+3. **Verify the Output**:
+   Check the terminal output of your running `wrangler dev` process. You should see:
+   - `Weekly rewards processed successfully.` (If the Supabase and Treasury API endpoints are mock/valid)
+   - Or, an appropriate error log if the endpoints are inaccessible, which confirms the error handling and fallback telemetry log is firing.
+
+### Verifying Iframe Cross-Origin Messaging
+To test the `postMessage` event broadcasting:
+1. Wrap the app inside a local iframe test page or observe the console when running `npm run dev`.
+2. Play a game and let it finish. Upon reaching the "GAMEOVER" state, a payload `{ type: 'AXIM_RUNNER_EVENT', payload: { event: 'GAME_OVER', ... } }` is broadcast to `window.parent`.
