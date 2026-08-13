@@ -3,6 +3,7 @@ export interface Env {
   AXIM_INTERNAL_KEY: string;
   SUPABASE_URL: string;
   SUPABASE_SERVICE_KEY: string;
+  TURNSTILE_SECRET_KEY: string;
 }
 
 const CORS_HEADERS = {
@@ -156,7 +157,30 @@ export default {
 
       try {
         const payload = await request.json() as any;
-        const { playerAddress, score, distance, powerNodes, multiplier, elapsedTimeSec, runHash } = payload;
+        const { turnstileToken, playerAddress, score, distance, powerNodes, multiplier, elapsedTimeSec, runHash } = payload;
+
+        // Turnstile Verification
+        if (!turnstileToken) {
+          return new Response(JSON.stringify({ error: "Missing Turnstile token" }), { status: 403, headers: CORS_HEADERS });
+        }
+
+        const turnstileVerify = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: new URLSearchParams({
+            secret: env.TURNSTILE_SECRET_KEY,
+            response: turnstileToken,
+            remoteip: ip
+          }).toString()
+        });
+
+        const turnstileOutcome = await turnstileVerify.json() as any;
+        if (!turnstileOutcome.success) {
+          console.error(JSON.stringify({ level: "error", type: "cyber_runner_telemetry", data: { message: "Turnstile verification failed", response: turnstileOutcome } }));
+          return new Response(JSON.stringify({ error: "Turnstile verification failed" }), { status: 403, headers: CORS_HEADERS });
+        }
 
         // Anti-Cheat Physics Boundary Check
         const maxPossibleScore = Math.floor((distance * 10 + (powerNodes * 50)) * multiplier);

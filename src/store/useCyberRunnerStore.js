@@ -59,6 +59,30 @@ export const useCyberRunnerStore = create(
       removeToast: (id) => set((state) => ({
         toasts: state.toasts.filter(t => t.id !== id)
       })),
+      syncWalletAddress: (newAddress) => {
+        const { playerAddress } = get();
+        if (newAddress !== playerAddress) {
+          set({
+            playerAddress: newAddress,
+            challengeProgress: {
+              cumulative_distance: 0,
+              cumulative_nodes: 0,
+              best_score: 0,
+              streak_days: 1,
+              last_play_date: null
+            },
+            hasSeenTutorial: false,
+            gameState: 'IDLE',
+            score: 0,
+            distance: 0,
+            powerNodes: 0,
+            newlyUnlockedChallenges: [],
+            isPaused: false,
+            runHash: null,
+            startTime: null
+          });
+        }
+      },
 
       setIsPaused: (paused) => set({ isPaused: paused }),
 
