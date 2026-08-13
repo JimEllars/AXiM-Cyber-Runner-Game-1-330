@@ -17,25 +17,6 @@ const { FiCpu, FiZap, FiActivity, FiLayers, FiTarget, FiMonitor } = FiIcons;
 function App() {
   const { crtEnabled, initializeSession, ticketStatus, setIsPaused } = useCyberRunnerStore();
 
-  const [isMobilePortrait, setIsMobilePortrait] = useState(false);
-
-  useEffect(() => {
-    const checkOrientation = () => {
-      const isMobile = window.innerWidth < 768;
-      const isPortrait = window.matchMedia("(orientation: portrait)").matches || window.screen.orientation?.type.startsWith("portrait");
-      setIsMobilePortrait(isMobile && isPortrait);
-    };
-
-    checkOrientation();
-    window.addEventListener('resize', checkOrientation);
-    window.screen.orientation?.addEventListener('change', checkOrientation);
-
-    return () => {
-      window.removeEventListener('resize', checkOrientation);
-      window.screen.orientation?.removeEventListener('change', checkOrientation);
-    };
-  }, []);
-
   const [showGate, setShowGate] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showSkins, setShowSkins] = useState(false);
@@ -60,9 +41,9 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const anyModalOpen = showGate || showLeaderboard || showSkins || showChallenges || showThemes || isMobilePortrait;
+    const anyModalOpen = showGate || showLeaderboard || showSkins || showChallenges || showThemes;
     setIsPaused(anyModalOpen);
-  }, [showGate, showLeaderboard, showSkins, showChallenges, showThemes, isMobilePortrait, setIsPaused]);
+  }, [showGate, showLeaderboard, showSkins, showChallenges, showThemes, setIsPaused]);
 
   return (
     <ErrorBoundary>
@@ -132,7 +113,7 @@ function App() {
       </header>
 
       <main className="flex-1 flex items-center justify-center p-4 relative z-10">
-        <div className="relative w-full max-w-5xl aspect-[2/1] group">
+        <div className="relative w-full h-full group flex items-center justify-center">
           <div className="absolute -top-1 -left-1 w-8 h-8 border-t-2 border-l-2 border-neon-cyan z-20" />
           <div className="absolute -top-1 -right-1 w-8 h-8 border-t-2 border-r-2 border-neon-cyan z-20" />
           <div className="absolute -bottom-1 -left-1 w-8 h-8 border-b-2 border-l-2 border-neon-magenta z-20" />
@@ -151,20 +132,6 @@ function App() {
         </div>
       </footer>
 
-
-      {isMobilePortrait && (
-        <div className="absolute inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center animate-fade-in portrait-overlay">
-          <div className="w-20 h-20 mb-6 border-2 border-neon-cyan rounded-full flex items-center justify-center animate-pulse">
-            <SafeIcon icon={FiMonitor} className="text-neon-cyan text-4xl transform rotate-90" />
-          </div>
-          <h2 className="text-2xl font-black text-neon-cyan tracking-[0.1em] mb-4 uppercase">
-            Landscape Mode Required
-          </h2>
-          <p className="text-gray-300 font-mono text-sm max-w-md border border-neon-magenta/30 bg-neon-magenta/5 p-4 rounded shadow-[0_0_15px_rgba(255,0,127,0.2)]">
-            AXiM Cyber-Runner is designed for landscape orientation. Please rotate your device to play.
-          </p>
-        </div>
-      )}
 
       <AchievementToast />
       <ThemeSelectorModal isOpen={showThemes} onClose={() => setShowThemes(false)} />
