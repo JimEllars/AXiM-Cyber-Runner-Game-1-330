@@ -26,6 +26,7 @@ export const useCyberRunnerStore = create(
       startTime: null,
       newlyUnlockedChallenges: [],
       ticketStatus: { freeRunAvailable: true },
+      hasSeenTutorial: false,
       toasts: [],
       
       challengeProgress: {
@@ -60,6 +61,8 @@ export const useCyberRunnerStore = create(
       })),
 
       setIsPaused: (paused) => set({ isPaused: paused }),
+
+      setHasSeenTutorial: (val) => set({ hasSeenTutorial: val }),
 
       setSkin: (skinId) => set({ selectedSkinId: skinId }),
       setTheme: (themeId) => {
@@ -126,6 +129,7 @@ export const useCyberRunnerStore = create(
             runnerApi.syncAchievements({ playerAddress, unlockedIds: newlyUnlockedChallenges }).catch(e => console.error("Sync error", e));
           }
           await runnerApi.submitRun({
+            turnstileToken: window.__TURNSTILE_TOKEN__ || '',
             playerAddress,
             score: Math.floor(score * get().streakMultiplier),
             distance: Math.floor(distance),
@@ -257,7 +261,8 @@ export const useCyberRunnerStore = create(
         hasMagnet: state.hasMagnet,
         runHash: state.runHash,
         startTime: state.startTime,
-        isPaused: state.isPaused
+        isPaused: state.isPaused,
+        hasSeenTutorial: state.hasSeenTutorial
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {

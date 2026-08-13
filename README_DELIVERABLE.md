@@ -110,3 +110,12 @@ To verify the structured JSON `stdout` logs emitted by the Edge Bridge:
    - Use the mouse (simulating touch) on the **Right Side** of the canvas and click: the runner should jump.
    - Click and Hold on the **Left Side** of the canvas: the runner should slide until released.
 8. **Rotate Device**: Use the rotate button in DevTools to switch to Landscape. The canvas and physics worker will dynamically recalculate coordinates, speed, and spawn distances smoothly on the fly.
+
+### Testing the Tutorial Overlay
+To re-trigger the tutorial overlay, you need to clear the local storage where the `hasSeenTutorial` state is persisted by the Zustand store:
+
+1. Open your browser's Developer Tools (F12 or Right-Click -> Inspect).
+2. Go to the **Application** tab (or **Storage** tab in Firefox).
+3. Under **Local Storage**, select the domain for the application (e.g., \`http://localhost:5173\`).
+4. Find the key \`axim-runner-storage\` and delete it, or clear all site data.
+5. Refresh the page and start a new run. The tutorial overlay should appear for the first 5 seconds of the game.

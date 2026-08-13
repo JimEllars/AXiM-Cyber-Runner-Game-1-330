@@ -23,6 +23,23 @@ const TokenGateModal = ({ isOpen, onClose }) => {
   const { addToast } = useCyberRunnerStore();
   const [txStatus, setTxStatus] = useState('');
 
+  const [turnstileToken, setTurnstileToken] = useState(null);
+
+  useEffect(() => {
+    // Render Turnstile widget invisibly when the modal opens or globally
+    if (window.turnstile) {
+      window.turnstile.render('#turnstile-widget', {
+        sitekey: import.meta.env.VITE_TURNSTILE_SITE_KEY || '1x00000000000000000000AA',
+        callback: function(token) {
+          setTurnstileToken(token);
+          // Also set globally for submit-run payload
+          window.__TURNSTILE_TOKEN__ = token;
+        },
+      });
+    }
+  }, []);
+
+
   const { data: hash, error: writeError, writeContract, isPending: isWritePending } = useWriteContract();
 
   const { isLoading: isConfirming, isSuccess: isConfirmed, error: confirmError } = useWaitForTransactionReceipt({
@@ -100,6 +117,7 @@ const TokenGateModal = ({ isOpen, onClose }) => {
         </p>
 
         <div className="flex flex-col gap-4">
+          <div id="turnstile-widget" style={{ display: 'none' }}></div>
           <button 
             onClick={handleBuyTicket}
             disabled={isProcessing}

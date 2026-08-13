@@ -10,8 +10,19 @@ const { FiShield, FiZap, FiPlay, FiRefreshCw, FiLoader, FiTwitter, FiSend, FiCop
 const RunnerHUD = () => {
   const { 
     gameState, score, distance, multiplier, streakMultiplier, challengeProgress, hasShield,
-    crtEnabled, toggleCrt, isMuted, toggleMute, startGame, ticketStatus, addToast
+    crtEnabled, toggleCrt, isMuted, toggleMute, startGame, ticketStatus, addToast,
+    hasSeenTutorial, setHasSeenTutorial
   } = useCyberRunnerStore();
+
+  React.useEffect(() => {
+    let timeout;
+    if (gameState === 'PLAYING' && !hasSeenTutorial) {
+      timeout = setTimeout(() => {
+        setHasSeenTutorial(true);
+      }, 5000);
+    }
+    return () => clearTimeout(timeout);
+  }, [gameState, hasSeenTutorial, setHasSeenTutorial]);
 
   const handleShare = async (platform) => {
     const data = generateShareData(score, challengeProgress.streak_days);
@@ -163,6 +174,24 @@ const RunnerHUD = () => {
       </div>
 
       {/* Bottom Controls Help */}
+      {/* Tutorial Overlay */}
+      {gameState === 'PLAYING' && !hasSeenTutorial && (
+        <div className="absolute inset-0 z-50 pointer-events-none flex items-center justify-between px-10">
+          <div className="bg-black/60 border border-neon-cyan/50 backdrop-blur-sm p-4 rounded-lg flex flex-col items-center gap-2 animate-pulse shadow-[0_0_15px_rgba(0,240,255,0.3)]">
+            <span className="text-neon-cyan font-bold uppercase tracking-widest text-sm text-center">Tap & Hold<br/>to Slide</span>
+            <div className="animate-bounce mt-2 text-neon-cyan">
+              <SafeIcon icon={FiIcons.FiArrowDown} className="text-3xl" />
+            </div>
+          </div>
+          <div className="bg-black/60 border border-neon-magenta/50 backdrop-blur-sm p-4 rounded-lg flex flex-col items-center gap-2 animate-pulse shadow-[0_0_15px_rgba(255,0,127,0.3)]">
+            <span className="text-neon-magenta font-bold uppercase tracking-widest text-sm text-center">Tap to Jump<br/>Double Tap</span>
+            <div className="animate-bounce mt-2 text-neon-magenta">
+              <SafeIcon icon={FiIcons.FiArrowUp} className="text-3xl" />
+            </div>
+          </div>
+        </div>
+      )}
+
       {gameState === 'PLAYING' && (
         <div className="flex justify-center gap-8 text-[10px] text-gray-500 font-mono tracking-widest bg-black/20 py-2 rounded-full border border-white/5 backdrop-blur-sm">
           <span>[SPACE/UP] JUMP</span>

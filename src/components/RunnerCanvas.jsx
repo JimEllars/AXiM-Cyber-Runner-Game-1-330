@@ -3,8 +3,13 @@ import { useCyberRunnerStore } from '../store/useCyberRunnerStore';
 import { audioEngine } from '../utils/SynthAudioEngine';
 
 const RunnerCanvas = () => {
+
   const canvasRef = useRef(null);
+  const [workerError, setWorkerError] = React.useState(null);
+  if (workerError) throw workerError;
+
   const { 
+
     gameState, hitObstacle, collectNode, updateDistance, isPaused,
     score, multiplier, getSelectedSkin, getSelectedTheme, hasMagnet, crtEnabled, toggleCrt
   } = useCyberRunnerStore();
@@ -72,6 +77,17 @@ const RunnerCanvas = () => {
 
     const worker = new Worker(new URL('../workers/physicsWorker.js', import.meta.url), { type: 'module' });
     worker.postMessage({ type: 'INIT', payload: { width: window.innerWidth, height: window.innerHeight } });
+
+    worker.onerror = (errorEvent) => {
+      worker.terminate();
+      setWorkerError(new Error("Web Worker Exception: " + errorEvent.message));
+    };
+
+    worker.onmessageerror = (event) => {
+      worker.terminate();
+      setWorkerError(new Error("Web Worker Message Error"));
+    };
+
 
     // Dynamic resizing
     const updateCanvasSize = () => {
