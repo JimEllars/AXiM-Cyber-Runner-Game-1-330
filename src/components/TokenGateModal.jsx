@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { useWriteContract, useWaitForTransactionReceipt, useAccount } from 'wagmi';
 import { parseEther } from 'viem';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
@@ -20,7 +20,7 @@ const ABI = [
 ];
 
 const TokenGateModal = ({ isOpen, onClose }) => {
-  const { addToast } = useCyberRunnerStore();
+  const { addToast, syncWalletAddress } = useCyberRunnerStore();
   const [txStatus, setTxStatus] = useState('');
 
   const [turnstileToken, setTurnstileToken] = useState(null);
@@ -39,6 +39,13 @@ const TokenGateModal = ({ isOpen, onClose }) => {
     }
   }, []);
 
+  const { address, isDisconnected } = useAccount();
+
+  useEffect(() => {
+    if (isDisconnected) {
+      syncWalletAddress(null);
+    }
+  }, [isDisconnected, syncWalletAddress]);
 
   const { data: hash, error: writeError, writeContract, isPending: isWritePending } = useWriteContract();
 
