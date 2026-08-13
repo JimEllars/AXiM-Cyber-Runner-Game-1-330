@@ -119,3 +119,29 @@ To re-trigger the tutorial overlay, you need to clear the local storage where th
 3. Under **Local Storage**, select the domain for the application (e.g., \`http://localhost:5173\`).
 4. Find the key \`axim-runner-storage\` and delete it, or clear all site data.
 5. Refresh the page and start a new run. The tutorial overlay should appear for the first 5 seconds of the game.
+
+## Sprint 17 Delivery: Verification, Isolation, & Optimization
+
+### Features Implemented:
+1. **Turnstile Edge Verification:** Added `TURNSTILE_SECRET_KEY` support to `wrangler.jsonc` and `Env` interface. The `submit-run` Edge Bridge endpoint extracts the `turnstileToken` from the payload and securely validates it against the Cloudflare API before accepting run ingestion, enforcing strict 403 Forbidden rejection logic.
+2. **Web3 Session Isolation:** Zustand state in `useCyberRunnerStore.js` is hardened with a `syncWalletAddress` mutation method. It detects whenever a newly connected wallet address does not equal the persisted `playerAddress`, promptly zeroing out all cross-account pollution (e.g. `challengeProgress`, score, and the `hasSeenTutorial` flag).
+3. **Off-Screen Canvas Rendering Loop:** Improved `RunnerCanvas.jsx` to pre-render heavily styled static primitives (the neon `grid` layout and the standard `obstacle` objects, reducing redundant `ctx.shadowBlur`, `beginPath`, and `stroke` invocations). `ctx.drawImage()` securely stamps the pre-computed sprites to slash GPU processing loads.
+
+### Testing Turnstile Edge Rejection Locally
+To verify the bot-block functionality gracefully:
+
+1. **Spin Up the Edge Bridge**:
+   Ensure you're running wrangler within the edge-bridge folder:
+   ```bash
+   cd edge-bridge && npx wrangler dev
+   ```
+2. **Inject a Mock Bot Submisson Payload**:
+   Execute the following curl command. Note we omit the `turnstileToken` param intentionally to trigger the validation rejection condition:
+   ```bash
+   curl -X POST http://localhost:8787/api/v1/runner/submit-run \
+   -H "Content-Type: application/json" \
+   -d '{"playerAddress": "0xBotTest", "score": 9000, "distance": 100, "powerNodes": 5, "multiplier": 1, "elapsedTimeSec": 60, "runHash": "bot_hash_999"}'
+   ```
+3. **Observe Output**:
+   The response output will return a strict `{"error":"Missing Turnstile token"}` with a `403 Forbidden` response header.
+   Additionally, observe the Edge Bridge terminal to capture the `console.error` telemetry stream flagging the rejected ingestion.

@@ -31,6 +31,36 @@ const RunnerCanvas = () => {
       skinGlow: skin.glowIntensity,
       themeId: theme.id
     };
+    const offscreenObstacle = document.createElement('canvas');
+    offscreenObstacle.width = 65; // w:25 + padding
+    offscreenObstacle.height = 70; // h:30 + padding
+    const octx = offscreenObstacle.getContext('2d');
+    octx.shadowColor = cachedStyles.themeSecondary;
+    octx.shadowBlur = 10;
+    octx.fillStyle = cachedStyles.themeSecondary;
+
+    if (cachedStyles.themeId === 'torrent') {
+        octx.beginPath();
+        octx.roundRect(20, 20, 25, 30, 5);
+        octx.fill();
+    } else if (cachedStyles.themeId === 'cosmos') {
+        octx.beginPath();
+        octx.arc(32.5, 35, 12.5, 0, Math.PI * 2);
+        octx.fill();
+    } else {
+        octx.fillRect(20, 20, 25, 30);
+    }
+
+    const offscreenGrid = document.createElement('canvas');
+    offscreenGrid.width = 100;
+    offscreenGrid.height = 1000;
+    const gctx = offscreenGrid.getContext('2d');
+    gctx.strokeStyle = cachedStyles.themeGrid;
+    gctx.lineWidth = 2;
+    gctx.beginPath();
+    gctx.moveTo(50, 0);
+    gctx.lineTo(0, 1000); // 50px offset over 1000px height. To perfectly match: 50px offset over 400px height... Actually let's just make it big enough
+    gctx.stroke();
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
@@ -284,11 +314,17 @@ const RunnerCanvas = () => {
 
       for(let i=0; i<30; i++) {
         let xPos = (backgroundLayers[0].x * 2 + (i * 100)) % effectiveWidth;
-        ctx.strokeStyle = cachedStyles.themeGrid;
-        ctx.beginPath();
-        ctx.moveTo(xPos, 300);
-        ctx.lineTo(xPos - 50, effectiveHeight + yOffset);
-        ctx.stroke();
+        if (performanceMode) {
+          ctx.strokeStyle = cachedStyles.themeGrid;
+          ctx.beginPath();
+          ctx.moveTo(xPos, 300);
+          ctx.lineTo(xPos - 50, effectiveHeight + yOffset);
+          ctx.stroke();
+        } else {
+          // offscreenGrid draws from (50, 0) to (0, 1000).
+          // So if we draw it at xPos - 50, y=300, it starts at xPos, 300.
+          ctx.drawImage(offscreenGrid, xPos - 50, 300, 100, Math.max(1, effectiveHeight + yOffset - 300));
+        }
       }
 
       const p = renderState.player;
@@ -334,20 +370,23 @@ const RunnerCanvas = () => {
       for (let i = renderState.obstacles.length - 1; i >= 0; i--) {
         let obs = renderState.obstacles[i];
         
-        ctx.shadowColor = cachedStyles.themeSecondary;
-        ctx.shadowBlur = performanceMode ? 0 : 10;
-        ctx.fillStyle = cachedStyles.themeSecondary;
-        
-        if (cachedStyles.themeId === 'torrent') {
-          ctx.beginPath();
-          ctx.roundRect(obs.x, obs.y, obs.w, obs.h, 5);
-          ctx.fill();
-        } else if (cachedStyles.themeId === 'cosmos') {
-          ctx.beginPath();
-          ctx.arc(obs.x + obs.w/2, obs.y + obs.h/2, obs.w/2, 0, Math.PI * 2);
-          ctx.fill();
+        if (performanceMode || obs.w !== 25 || obs.h !== 30) {
+            ctx.shadowColor = cachedStyles.themeSecondary;
+            ctx.shadowBlur = performanceMode ? 0 : 10;
+            ctx.fillStyle = cachedStyles.themeSecondary;
+            if (cachedStyles.themeId === 'torrent') {
+              ctx.beginPath();
+              ctx.roundRect(obs.x, obs.y, obs.w, obs.h, 5);
+              ctx.fill();
+            } else if (cachedStyles.themeId === 'cosmos') {
+              ctx.beginPath();
+              ctx.arc(obs.x + obs.w/2, obs.y + obs.h/2, obs.w/2, 0, Math.PI * 2);
+              ctx.fill();
+            } else {
+              ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+            }
         } else {
-          ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+            ctx.drawImage(offscreenObstacle, obs.x - 20, obs.y - 20); // 20px padding for shadow
         }
       }
 
