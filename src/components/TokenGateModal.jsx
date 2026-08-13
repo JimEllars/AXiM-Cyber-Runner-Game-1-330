@@ -4,6 +4,7 @@ import { parseEther } from 'viem';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 import { useCyberRunnerStore } from '../store/useCyberRunnerStore';
+import { requestFullscreen } from '../utils/fullscreen';
 
 const { FiUnlock, FiX } = FiIcons;
 
@@ -60,6 +61,7 @@ const TokenGateModal = ({ isOpen, onClose }) => {
   }, [writeError, confirmError, addToast, onClose]);
 
   const handleBuyTicket = () => {
+    requestFullscreen();
     try {
       writeContract({
         address: AXIM_CONTRACT_ADDRESS,
@@ -107,7 +109,7 @@ const TokenGateModal = ({ isOpen, onClose }) => {
           </button>
           
           <button 
-            onClick={onClose}
+            onClick={() => { requestFullscreen(); onClose(); }}
             disabled={isProcessing}
             className="w-full py-3 border border-gray-600 text-gray-400 hover:bg-gray-800 transition-all text-sm disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
           >

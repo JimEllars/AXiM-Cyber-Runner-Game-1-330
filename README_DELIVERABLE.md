@@ -90,3 +90,23 @@ To verify the structured JSON `stdout` logs emitted by the Edge Bridge:
    {"level": "error", "type": "cyber_runner_telemetry", "data": {"message": "hitl_audit_logs error", "error": "FetchError: ... "}}
    ```
    This confirms the observability requirement is fully active.
+
+## Sprint 15 Delivery: Omni-Directional Mobile Support & Fullscreen Auto-Scaling
+
+### Features Implemented:
+1. **Fullscreen API Integration:** Removed strict landscape enforcement (overlay). Added automatic `requestFullscreen` triggers on game start and token gate interactions for an immersive native app feel.
+2. **Dynamic Rescaling & Portrait Logic:** Re-wrote canvas sizing logic to bind to `window.innerWidth` and `innerHeight` dynamically using Resize events. Implemented camera scaling logic in the canvas drawing step to ensure correct aspect ratios and FOV, even when rotated.
+3. **Responsive Physics:** Updated the `physicsWorker` to handle dynamic width messages (`INIT` and `RESIZE`). Dynamically increases object spawn distances (`1200px`) and slightly reduces the speed multiplier curve (`0.85x`) in portrait mode, guaranteeing fair play constraints when horizontally confined.
+4. **Touch Control Split-Screen Revision:** Removed unreliable `swipe-down` controls. Implemented strict touch zone tracking (`e.preventDefault()`), assigning left 50% screen to slide (hold) and right 50% to jump (tap).
+
+### Testing Portrait View and Split-Screen Controls in Chrome DevTools
+1. **Start the local dev server**: `npm run dev`.
+2. **Open Chrome DevTools** (F12 or Ctrl+Shift+I).
+3. **Toggle Device Toolbar** (Ctrl+Shift+M or click the phone/tablet icon in DevTools).
+4. **Select a mobile device** (e.g., iPhone 12 Pro) and ensure it is oriented in **Portrait Mode**.
+5. Observe that the game canvas now fully renders and auto-scales instead of showing the "Landscape Required" overlay.
+6. Click **Start Run**. (Note: Fullscreen API is usually blocked inside standard devtools framing unless explicitly testing on a real device or a new PWA tab, but the canvas dimensions will adapt).
+7. **Test Touch Zones**:
+   - Use the mouse (simulating touch) on the **Right Side** of the canvas and click: the runner should jump.
+   - Click and Hold on the **Left Side** of the canvas: the runner should slide until released.
+8. **Rotate Device**: Use the rotate button in DevTools to switch to Landscape. The canvas and physics worker will dynamically recalculate coordinates, speed, and spawn distances smoothly on the fly.

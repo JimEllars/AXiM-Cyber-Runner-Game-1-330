@@ -12,12 +12,25 @@ let player = {
 let obstacles = [];
 let nodes = [];
 let t = 0; // accumulated time for speed
-const canvasWidth = 800;
+let currentWidth = 800;
+let currentHeight = 400;
+let spawnDistance = 800;
 
 self.onmessage = function(e) {
   const data = e.data;
 
   if (data.type === 'INIT') {
+      if (data.payload) {
+          currentWidth = data.payload.width;
+          currentHeight = data.payload.height;
+          // Scale spawn distance for portrait mode to give player enough reaction time
+          spawnDistance = currentHeight > currentWidth ? (currentWidth / (currentWidth / 800)) * 1.5 : currentWidth;
+          if (currentHeight > currentWidth) {
+              spawnDistance = 1200; // Force higher spawn distance if in portrait for consistent feel
+          } else {
+              spawnDistance = 800;
+          }
+      }
       player = {
           x: 50,
           y: 250,
@@ -50,12 +63,22 @@ self.onmessage = function(e) {
       player.h = 50;
       player.y = 250;
   }
+  else if (data.type === 'RESIZE') {
+      currentWidth = data.payload.width;
+      currentHeight = data.payload.height;
+      if (currentHeight > currentWidth) {
+          spawnDistance = 1200; // Increased spawn distance in portrait
+      } else {
+          spawnDistance = 800; // Standard distance
+      }
+  }
   else if (data.type === 'UPDATE') {
     const { hasMagnet, dt } = data.payload;
     t += dt;
 
     // Calculate speed based on function provided: v(t) = 300 + 18.5 * t^0.65
-    const speed = 300 + 18.5 * Math.pow(t, 0.65);
+    let speedMultiplier = currentHeight > currentWidth ? 0.85 : 1.0;
+    const speed = (300 + 18.5 * Math.pow(t, 0.65)) * speedMultiplier;
 
     // Gravity simulation
     const gravity = 1500;
@@ -125,7 +148,7 @@ self.onmessage = function(e) {
     if (Math.random() > 0.985) {
         const isHigh = Math.random() > 0.5;
         obstacles.push({
-            x: canvasWidth,
+            x: spawnDistance,
             y: isHigh ? 180 : 270,
             w: 25,
             h: 30,
@@ -141,7 +164,7 @@ self.onmessage = function(e) {
         else if (rand > 0.75) type = 'gold';
 
         nodes.push({
-            x: canvasWidth,
+            x: spawnDistance,
             y: 120 + Math.random() * 150,
             w: 18,
             h: 18,

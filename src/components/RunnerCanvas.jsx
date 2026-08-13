@@ -29,6 +29,7 @@ const RunnerCanvas = () => {
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
+
     let animationFrameId;
 
     const handleVisibilityChange = () => {
@@ -70,7 +71,19 @@ const RunnerCanvas = () => {
     let accumulatedDt = 0;
 
     const worker = new Worker(new URL('../workers/physicsWorker.js', import.meta.url), { type: 'module' });
-    worker.postMessage({ type: 'INIT' });
+    worker.postMessage({ type: 'INIT', payload: { width: window.innerWidth, height: window.innerHeight } });
+
+    // Dynamic resizing
+    const updateCanvasSize = () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        if (worker) {
+            worker.postMessage({ type: 'RESIZE', payload: { width: canvas.width, height: canvas.height } });
+        }
+    };
+
+    window.addEventListener('resize', updateCanvasSize);
+    updateCanvasSize();
 
     worker.onmessage = (e) => {
         if (e.data.type === 'UPDATE_RESULT') {
@@ -137,27 +150,19 @@ const RunnerCanvas = () => {
       if (touchX > rect.width / 2) {
           worker.postMessage({ type: 'JUMP' });
       } else {
-        startTouchY = touch.clientY;
+          worker.postMessage({ type: 'SLIDE_START' });
       }
     };
 
     const handleTouchMove = (e) => {
       if (gameState !== 'PLAYING') return;
       e.preventDefault();
-      if (startTouchY !== null) {
-        const currentY = e.touches[0].clientY;
-        const diffY = currentY - startTouchY;
-        if (diffY > 30) {
-          worker.postMessage({ type: 'SLIDE_START' });
-          startTouchY = null;
-        }
-      }
     };
 
     const handleTouchEnd = (e) => {
       if (gameState !== 'PLAYING') return;
       e.preventDefault();
-      startTouchY = null;
+      // Only fire end if we lifted from the left side, or just always fire it to be safe
       worker.postMessage({ type: 'SLIDE_END' });
     };
 
@@ -211,14 +216,34 @@ const RunnerCanvas = () => {
           accumulatedDt = 0;
       }
 
+      // Scale for portrait
+      ctx.save();
+      let scale = 1;
+      let yOffset = 0;
+      if (canvas.height > canvas.width) {
+          scale = canvas.width / 800; // fit to standard 800 width
+          yOffset = (canvas.height / scale - 400) / 2; // Center vertically
+          ctx.scale(scale, scale);
+      } else {
+          scale = Math.max(canvas.width / 800, canvas.height / 400);
+          yOffset = (canvas.height / scale - 400) / 2;
+          ctx.scale(scale, scale);
+      }
+
+      const effectiveWidth = canvas.width / scale;
+      const effectiveHeight = canvas.height / scale;
+
+      // Update camera translate for yOffset
+      ctx.translate(0, yOffset);
+
       // Background
       ctx.fillStyle = cachedStyles.themeBackground;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillRect(0, -yOffset, effectiveWidth, effectiveHeight + yOffset * 2);
 
       // Parallax Background Layers
       backgroundLayers.forEach(layer => {
         layer.x -= renderState.speed * layer.speed * dt;
-        if (layer.x <= -canvas.width) layer.x = 0;
+        if (layer.x <= -effectiveWidth) layer.x = 0;
         ctx.fillStyle = layer.color;
         
         if (cachedStyles.themeId === 'cosmos') {
@@ -229,8 +254,8 @@ const RunnerCanvas = () => {
           ctx.globalAlpha = 1.0;
         }
         
-        ctx.fillRect(layer.x, 0, canvas.width, 300);
-        ctx.fillRect(layer.x + canvas.width, 0, canvas.width, 300);
+        ctx.fillRect(layer.x, -yOffset, effectiveWidth, 300 + yOffset);
+        ctx.fillRect(layer.x + effectiveWidth, -yOffset, effectiveWidth, 300 + yOffset);
       });
 
       // Grid Floor
@@ -238,15 +263,15 @@ const RunnerCanvas = () => {
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(0, 300);
-      ctx.lineTo(canvas.width, 300);
+      ctx.lineTo(effectiveWidth, 300);
       ctx.stroke();
 
-      for(let i=0; i<15; i++) {
-        let xPos = (backgroundLayers[0].x * 2 + (i * 100)) % canvas.width;
+      for(let i=0; i<30; i++) {
+        let xPos = (backgroundLayers[0].x * 2 + (i * 100)) % effectiveWidth;
         ctx.strokeStyle = cachedStyles.themeGrid;
         ctx.beginPath();
         ctx.moveTo(xPos, 300);
-        ctx.lineTo(xPos - 50, 400);
+        ctx.lineTo(xPos - 50, effectiveHeight + yOffset);
         ctx.stroke();
       }
 
@@ -339,6 +364,7 @@ const RunnerCanvas = () => {
         }
       }
 
+      ctx.restore();
       animationFrameId = requestAnimationFrame(render);
     };
 
@@ -360,6 +386,7 @@ const RunnerCanvas = () => {
       canvas.removeEventListener('touchmove', handleTouchMove);
       canvas.removeEventListener('touchend', handleTouchEnd);
       canvas.removeEventListener('touchcancel', handleTouchEnd);
+      window.removeEventListener('resize', updateCanvasSize);
       audioEngine.stopBassline();
     };
   }, [gameState, getSelectedSkin, getSelectedTheme]);
@@ -367,9 +394,7 @@ const RunnerCanvas = () => {
   return (
     <canvas 
       ref={canvasRef} 
-      width={800} 
-      height={400} 
-      className="w-full h-full max-w-4xl max-h-[500px] border-2 border-neon-magenta rounded-lg shadow-[0_0_20px_rgba(255,0,127,0.3)] bg-neon-bg" 
+      className="absolute top-0 left-0 w-full h-full block bg-neon-bg"
     />
   );
 };
