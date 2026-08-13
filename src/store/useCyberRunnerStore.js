@@ -79,7 +79,8 @@ export const useCyberRunnerStore = create(
             newlyUnlockedChallenges: [],
             isPaused: false,
             runHash: null,
-            startTime: null
+            startTime: null,
+            ticketStatus: { freeRunAvailable: true }
           });
         }
       },

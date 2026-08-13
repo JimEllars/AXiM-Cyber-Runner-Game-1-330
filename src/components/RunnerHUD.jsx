@@ -46,6 +46,19 @@ const RunnerHUD = () => {
       {/* Top HUD */}
       <div className="flex justify-between items-start font-mono uppercase">
         <div className="flex flex-col gap-2">
+          <a
+            href="https://axim.us.com/games"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="pointer-events-auto block mb-2"
+          >
+            <img
+              src="https://wp.axim.us.com/wp-content/uploads/2026/08/AXiM-Development-1200x628-layout1284-infrastructure-axim-axim-axim-1l7q5v7.webp"
+              alt="AXiM Logo"
+              className="max-w-[120px] md:max-w-[150px] hover:opacity-80 transition-opacity"
+              decoding="async"
+            />
+          </a>
           <div className="text-2xl text-glow-cyan text-neon-cyan font-bold tracking-tighter">
             SCORE: {Math.floor(score).toLocaleString()}
           </div>
