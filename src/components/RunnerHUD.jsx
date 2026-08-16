@@ -10,8 +10,8 @@ const { FiShield, FiZap, FiPlay, FiRefreshCw, FiLoader, FiTwitter, FiSend, FiCop
 const RunnerHUD = () => {
   const { 
     gameState, score, distance, multiplier, streakMultiplier, challengeProgress, hasShield,
-    crtEnabled, toggleCrt, isMuted, toggleMute, startGame, ticketStatus, addToast,
-    hasSeenTutorial, setHasSeenTutorial
+    crtEnabled, toggleCrt, isMuted, toggleMute, startGame, startPracticeMode, ticketStatus, addToast,
+    hasSeenTutorial, setHasSeenTutorial, isPracticeMode
   } = useCyberRunnerStore();
 
   React.useEffect(() => {
@@ -43,6 +43,13 @@ const RunnerHUD = () => {
 
   return (
     <div className="absolute top-0 left-0 w-full h-full pointer-events-none p-4 flex flex-col justify-between z-20">
+            {isPracticeMode && (
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 pointer-events-none z-50 animate-pulse opacity-70 mt-[env(safe-area-inset-top)]">
+          <div className="bg-neon-magenta/20 border border-neon-magenta text-neon-magenta px-4 py-1 rounded text-xs font-bold tracking-widest uppercase shadow-[0_0_10px_rgba(255,0,127,0.3)] backdrop-blur-sm">
+            PRACTICE MODE - UNRANKED
+          </div>
+        </div>
+      )}
       {/* Top HUD */}
       <div className="flex justify-between items-start font-mono uppercase">
         <div className="flex flex-col gap-2">
@@ -102,7 +109,7 @@ const RunnerHUD = () => {
         {gameState === 'IDLE' && (
           <div className="flex flex-col items-center gap-6">
             <button 
-              onClick={() => { requestFullscreen(); startGame(); }}
+              onClick={() => { requestFullscreen(); if (gameState === 'IDLE' && !ticketStatus.freeRunAvailable) { window.dispatchEvent(new Event('OPEN_TOKEN_GATE')); } else { isPracticeMode ? startPracticeMode() : startGame(); } }}
               className="group relative px-10 py-5 bg-neon-bg border-2 border-neon-cyan text-neon-cyan text-2xl font-bold uppercase tracking-[0.3em] hover:bg-neon-cyan hover:text-black transition-all shadow-[0_0_20px_rgba(0,240,255,0.4)] overflow-hidden focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
             >
               <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
@@ -177,7 +184,7 @@ const RunnerHUD = () => {
             </div>
 
             <button 
-              onClick={() => { requestFullscreen(); startGame(); }}
+              onClick={() => { requestFullscreen(); if (gameState === 'IDLE' && !ticketStatus.freeRunAvailable) { window.dispatchEvent(new Event('OPEN_TOKEN_GATE')); } else { isPracticeMode ? startPracticeMode() : startGame(); } }}
               className="w-full px-8 py-3 bg-neon-magenta text-white font-bold uppercase text-sm tracking-widest hover:brightness-125 transition-all flex items-center justify-center gap-3 shadow-[0_0_20px_rgba(255,0,127,0.4)] focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
             >
               <SafeIcon icon={FiRefreshCw} /> Reboot System

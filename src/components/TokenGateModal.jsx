@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useWriteContract, useWaitForTransactionReceipt, useAccount } from 'wagmi';
+import { useWriteContract, useWaitForTransactionReceipt, useAccount, useBalance } from 'wagmi';
 import { parseEther } from 'viem';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
@@ -21,7 +21,7 @@ const ABI = [
 ];
 
 const TokenGateModal = ({ isOpen, onClose }) => {
-  const { addToast, syncWalletAddress } = useCyberRunnerStore();
+  const { addToast, syncWalletAddress, startPracticeMode } = useCyberRunnerStore();
   const [txStatus, setTxStatus] = useState('');
 
   const [turnstileToken, setTurnstileToken] = useState(null);
@@ -41,6 +41,14 @@ const TokenGateModal = ({ isOpen, onClose }) => {
   }, []);
 
   const { address, isDisconnected } = useAccount();
+
+  const { data: balanceData } = useBalance({
+    address,
+    token: AXIM_CONTRACT_ADDRESS,
+  });
+
+  const aximBalance = balanceData ? Number(balanceData.formatted) : 0;
+  const hasInsufficientBalance = aximBalance < 5;
 
   useEffect(() => {
     if (isDisconnected) {
@@ -132,18 +140,33 @@ const TokenGateModal = ({ isOpen, onClose }) => {
           You have consumed your free daily run. Insert 5 AXiM tokens to unlock a premium tournament run and submit to the global leaderboard.
         </p>
 
+        <div className="mb-4 flex justify-between items-center text-sm font-bold">
+          <span className="text-gray-400">Balance:</span>
+          <span className={hasInsufficientBalance ? 'text-red-400' : 'text-neon-cyan'}>
+            {balanceData ? balanceData.formatted.substring(0, 6) : '0'} AXiM
+          </span>
+        </div>
+
+        {hasInsufficientBalance && (
+          <div className="mb-4 text-center">
+            <a href="https://axim.us.com/swap" target="_blank" rel="noopener noreferrer" className="text-xs text-neon-cyan underline hover:text-white transition-colors">
+              Get more AXiM tokens here
+            </a>
+          </div>
+        )}
+
         <div className="flex flex-col gap-4">
           <div id="turnstile-widget" style={{ display: 'none' }}></div>
           <button 
             onClick={handleBuyTicket}
-            disabled={isProcessing}
+            disabled={isProcessing || hasInsufficientBalance}
             className="w-full py-3 bg-neon-magenta/20 border border-neon-magenta text-neon-magenta hover:bg-neon-magenta hover:text-white transition-all flex items-center justify-center gap-2 disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
           >
-            {isProcessing ? txStatus || 'Processing TX...' : <><SafeIcon icon={FiUnlock} /> Pay 5.00 AXiM</>}
+            {isProcessing ? txStatus || 'Processing TX...' : hasInsufficientBalance ? <><SafeIcon icon={FiUnlock} /> Insufficient Balance</> : <><SafeIcon icon={FiUnlock} /> Pay 5.00 AXiM</>}
           </button>
           
           <button 
-            onClick={() => { requestFullscreen(); onClose(); }}
+            onClick={() => { requestFullscreen(); startPracticeMode(); onClose(); }}
             disabled={isProcessing}
             className="w-full py-3 border border-gray-600 text-gray-400 hover:bg-gray-800 transition-all text-sm disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
           >
