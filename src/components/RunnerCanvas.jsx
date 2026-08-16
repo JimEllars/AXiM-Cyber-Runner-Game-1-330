@@ -107,6 +107,9 @@ const RunnerCanvas = () => {
 
     const worker = new Worker(new URL('../workers/physicsWorker.js', import.meta.url), { type: 'module' });
     worker.postMessage({ type: 'INIT', payload: { width: window.innerWidth, height: window.innerHeight } });
+    if (gameState === 'PLAYING') {
+      worker.postMessage({ type: 'RESET' });
+    }
 
     worker.onerror = (errorEvent) => {
       worker.terminate();

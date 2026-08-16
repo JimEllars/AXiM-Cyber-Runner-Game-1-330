@@ -19,6 +19,18 @@ const LeaderboardModal = ({ isOpen, onClose }) => {
   };
   const [leaders, setLeaders] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [refreshDisabled, setRefreshDisabled] = useState(false);
+
+  const handleRefresh = () => {
+    if (refreshDisabled || loading) return;
+
+    setRefreshDisabled(true);
+    fetchLeaders();
+
+    setTimeout(() => {
+      setRefreshDisabled(false);
+    }, 10000);
+  };
 
   const fetchLeaders = async () => {
     setLoading(true);
@@ -41,7 +53,16 @@ const LeaderboardModal = ({ isOpen, onClose }) => {
   };
 
   useEffect(() => {
-    if (isOpen) fetchLeaders();
+    let intervalId;
+    if (isOpen) {
+      fetchLeaders();
+      intervalId = setInterval(() => {
+        fetchLeaders();
+      }, 60000);
+    }
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
   }, [isOpen]);
 
   return (
@@ -61,8 +82,11 @@ const LeaderboardModal = ({ isOpen, onClose }) => {
           </h3>
           <div className="flex items-center gap-4">
             <button 
-              onClick={fetchLeaders} 
-              className={`text-gray-400 hover:text-neon-cyan transition-colors ${loading ? 'animate-spin' : ''}`}
+              onClick={handleRefresh}
+              disabled={refreshDisabled || loading}
+              className={`transition-colors ${
+                refreshDisabled ? 'text-gray-600 cursor-not-allowed' : 'text-gray-400 hover:text-neon-cyan'
+              } ${loading ? 'animate-spin' : ''}`}
             >
               <SafeIcon icon={FiRefreshCw} />
             </button>

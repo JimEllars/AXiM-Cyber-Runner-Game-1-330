@@ -123,6 +123,8 @@ export const useCyberRunnerStore = create(
           powerNodes: 0, 
           hasShield: false,
           hasMagnet: false,
+          multiplier: 1.0,
+          isPaused: false,
           runHash: crypto.randomUUID(),
           startTime: Date.now(),
           newlyUnlockedChallenges: []
