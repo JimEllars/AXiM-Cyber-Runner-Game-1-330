@@ -19,7 +19,7 @@ let spawnDistance = 800;
 self.onmessage = function(e) {
   const data = e.data;
 
-  if (data.type === 'INIT') {
+  if (data.type === 'INIT' || data.type === 'RESET') {
       if (data.payload) {
           currentWidth = data.payload.width;
           currentHeight = data.payload.height;

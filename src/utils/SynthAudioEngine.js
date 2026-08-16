@@ -6,6 +6,7 @@ class SynthAudioEngine {
     this.basslineOsc = null;
     this.isPlaying = false;
     this.warmedUp = false;
+    this.activeSounds = 0;
   }
 
   warmUp() {
@@ -30,14 +31,21 @@ class SynthAudioEngine {
   playTone(freq, type = 'square', duration = 0.1, vol = 0.1) {
     const { isMuted } = useCyberRunnerStore.getState();
     if (isMuted) return;
+    if (this.activeSounds > 3) return; // Drop sound if too many are playing
+
     this.initCtx();
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     
+    // Ducking: lower gain based on active sounds
+    const duckedVol = vol * (1 - (this.activeSounds * 0.25));
+
+    this.activeSounds++;
+
     osc.type = type;
     osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
     
-    gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+    gain.gain.setValueAtTime(duckedVol, this.ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
     
     osc.connect(gain);
@@ -45,6 +53,10 @@ class SynthAudioEngine {
     
     osc.start();
     osc.stop(this.ctx.currentTime + duration);
+
+    setTimeout(() => {
+      this.activeSounds = Math.max(0, this.activeSounds - 1);
+    }, duration * 1000);
   }
 
   playJump() {

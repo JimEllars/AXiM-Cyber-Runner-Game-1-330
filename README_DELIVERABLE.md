@@ -43,3 +43,11 @@
 2. Verify runnerApi.checkSession() has been added to api.js.
 3. Verify handleBuyTicket in TokenGateModal.jsx calls runnerApi.checkSession() before proceeding with the transaction.
 4. If checkSession fails, ensure a toast notification SESSION EXPIRED: Re-sign to verify session is displayed and the token transfer does not proceed.
+
+## Testing the Worker Reset State
+To verify the worker's reset state:
+1. Start the game by clicking "Play Practice Mode".
+2. Die to an obstacle to trigger the game over state.
+3. In the game over screen, note your current score and distance.
+4. Restart the game by clicking "Run Again".
+5. Observe that the obstacles and nodes begin spawning correctly and the game's speed/distance counters do not instantly resume from the values prior to the crash, confirming that the internal physics distance and accumulators have been properly cleared by the RESET message.
