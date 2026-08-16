@@ -22,6 +22,19 @@ const fetchWithTimeout = async (resource, options = {}) => {
 
 export const runnerApi = {
   /**
+   * Validates the current SIWE session
+   */
+  async checkSession() {
+    try {
+      const response = await fetchWithTimeout(`${API_BASE}/validate-session`, { timeout: 3000 });
+      if (!response.ok) throw new Error('Session expired');
+      return await response.json();
+    } catch (error) {
+      console.error('API Error (Session):', error);
+      throw error;
+    }
+  },
+  /**
    * Checks if the user has a free run available for today
    */
   /**

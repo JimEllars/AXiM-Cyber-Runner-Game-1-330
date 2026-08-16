@@ -50,12 +50,12 @@ const RunnerHUD = () => {
             href="https://axim.us.com/games"
             target="_blank"
             rel="noopener noreferrer"
-            className="pointer-events-auto block mb-2"
+            className="pointer-events-auto block mb-2 pt-[env(safe-area-inset-top)] pl-[env(safe-area-inset-left)]"
           >
             <img
               src="https://wp.axim.us.com/wp-content/uploads/2026/08/AXiM-Development-1200x628-layout1284-infrastructure-axim-axim-axim-1l7q5v7.webp"
               alt="AXiM Logo"
-              className="max-w-[120px] md:max-w-[150px] hover:opacity-80 transition-opacity"
+              className="max-w-[120px] hover:opacity-80 transition-opacity"
               decoding="async"
             />
           </a>

@@ -26,3 +26,20 @@
 3. Open your wallet provider extension (e.g., MetaMask) and manually disconnect the active account.
 4. The Wagmi `useAccount` hook will detect this event (`isDisconnected === true`) and flush the Zustand store (`syncWalletAddress(null)`).
 5. Confirm that the application has reverted to a clean slate (score 0, unauthenticated state, and daily ticket refreshed to `freeRunAvailable: true`).
+
+## Testing Step 1: AXiM Logo & External Link
+1. Inspect RunnerHUD component.
+2. Verify the logo image is fetched from the correct wp.axim.us.com URL.
+3. Verify it is wrapped in an anchor tag linking to https://axim.us.com/games with target=_blank and rel=noopener noreferrer.
+4. Verify mobile safe-area classes pt-[env(safe-area-inset-top)] pl-[env(safe-area-inset-left)] are applied to ensure it does not overlap with device notches.
+
+## Testing Step 2: Canvas Resize Debouncing
+1. Inspect RunnerCanvas component.
+2. Verify the resize event handler logic uses a debounce utility/timeout (e.g., 150ms) to throttle updates when the window is resized rapidly.
+3. Test by simulating a device rotation or rapidly resizing the browser window, ensuring the canvas updates correctly after the debounced delay without freezing the UI thread.
+
+## Testing Step 3: SIWE Session Expiry Check
+1. Inspect TokenGateModal.jsx and api.js.
+2. Verify runnerApi.checkSession() has been added to api.js.
+3. Verify handleBuyTicket in TokenGateModal.jsx calls runnerApi.checkSession() before proceeding with the transaction.
+4. If checkSession fails, ensure a toast notification SESSION EXPIRED: Re-sign to verify session is displayed and the token transfer does not proceed.

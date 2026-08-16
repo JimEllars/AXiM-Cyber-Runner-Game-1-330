@@ -5,6 +5,7 @@ import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 import { useCyberRunnerStore } from '../store/useCyberRunnerStore';
 import { requestFullscreen } from '../utils/fullscreen';
+import { runnerApi } from '../services/api';
 
 const { FiUnlock, FiX } = FiIcons;
 
@@ -84,9 +85,17 @@ const TokenGateModal = ({ isOpen, onClose }) => {
     }
   }, [writeError, confirmError, addToast, onClose]);
 
-  const handleBuyTicket = () => {
+  const handleBuyTicket = async () => {
     requestFullscreen();
     try {
+      // SIWE Session Expiry Check
+      try {
+        await runnerApi.checkSession();
+      } catch (err) {
+        addToast('SESSION EXPIRED', 'Re-sign to verify session', 'error');
+        return;
+      }
+
       writeContract({
         address: AXIM_CONTRACT_ADDRESS,
         abi: ABI,
