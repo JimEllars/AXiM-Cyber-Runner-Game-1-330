@@ -120,7 +120,7 @@ const RunnerCanvas = () => {
 
 
     // Dynamic resizing
-    const updateCanvasSize = () => {
+    const updateCanvasSizeRaw = () => {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
         if (worker) {
@@ -128,8 +128,14 @@ const RunnerCanvas = () => {
         }
     };
 
+    let resizeTimeout;
+    const updateCanvasSize = () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(updateCanvasSizeRaw, 150);
+    };
+
     window.addEventListener('resize', updateCanvasSize);
-    updateCanvasSize();
+    updateCanvasSizeRaw();
 
     worker.onmessage = (e) => {
         if (e.data.type === 'UPDATE_RESULT') {
