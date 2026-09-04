@@ -3,7 +3,7 @@
  * Handles communication with the Cloudflare Edge Worker
  */
 
-const API_BASE = 'api/v1/runner';
+const API_BASE = 'api/v1/game';
 
 const fetchWithTimeout = async (resource, options = {}) => {
   const { timeout = 3000 } = options;
@@ -31,6 +31,29 @@ export const runnerApi = {
       return await response.json();
     } catch (error) {
       console.error('API Error (Session):', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Validates a Passport SSO delegation token
+   */
+  async validateToken(token) {
+    try {
+      // In a real scenario, this would call AXiM Core session endpoints
+      // Mocking success for demo purposes, but pointing to expected route
+      const response = await fetchWithTimeout(`/api/v1/auth/validate-token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        timeout: 3000
+      });
+      if (!response.ok) throw new Error('Invalid token');
+      return await response.json();
+    } catch (error) {
+      console.error('Token Validation Error:', error);
       throw error;
     }
   },
@@ -71,7 +94,7 @@ export const runnerApi = {
    */
   async submitRun(payload) {
     try {
-      const response = await fetchWithTimeout(`${API_BASE}/submit-run`, {
+      const response = await fetchWithTimeout(`${API_BASE}/runs/complete`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

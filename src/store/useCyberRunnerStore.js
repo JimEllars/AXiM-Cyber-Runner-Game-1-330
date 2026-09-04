@@ -13,6 +13,9 @@ export const useCyberRunnerStore = create(
       distance: 0,
       isPaused: false,
       powerNodes: 0,
+      session_bits: 0,
+      total_bits_balance: 0,
+      claimable_erc20_allowance: 0,
       multiplier: 1.0,
       streakMultiplier: 1.0,
       hasShield: false,
@@ -48,6 +51,17 @@ export const useCyberRunnerStore = create(
         }
       },
 
+      mergeGuestBits: (cloudBits) => set((state) => {
+        // Merge local guest bits into cloud balance when logging in
+        return { total_bits_balance: state.total_bits_balance + cloudBits };
+      }),
+      setPlayerState: (data) => set((state) => ({
+        playerAddress: data.address,
+        total_bits_balance: state.total_bits_balance + (data.total_bits_balance || 0),
+        claimable_erc20_allowance: data.claimable_erc20_allowance || 0,
+        hasSeenTutorial: data.hasSeenTutorial ?? state.hasSeenTutorial
+      })),
+
       addToast: (title, message, type = 'info') => {
         const id = Math.random().toString(36).substring(7);
         set((state) => ({ 
@@ -76,6 +90,7 @@ export const useCyberRunnerStore = create(
             score: 0,
             distance: 0,
             powerNodes: 0,
+            session_bits: 0,
             newlyUnlockedChallenges: [],
             isPaused: false,
             isPracticeMode: false,
@@ -122,6 +137,7 @@ export const useCyberRunnerStore = create(
           score: 0,
           distance: 0,
           powerNodes: 0,
+          session_bits: 0,
           hasShield: false,
           hasMagnet: false,
           multiplier: 1.0,
@@ -138,6 +154,7 @@ export const useCyberRunnerStore = create(
           score: 0, 
           distance: 0, 
           powerNodes: 0, 
+          session_bits: 0,
           hasShield: false,
           hasMagnet: false,
           multiplier: 1.0,
@@ -150,7 +167,7 @@ export const useCyberRunnerStore = create(
       },
       
             endGame: async () => {
-        const { score, distance, powerNodes, multiplier, runHash, startTime, playerAddress, gameState, challengeProgress, newlyUnlockedChallenges, isPracticeMode } = get();
+        const { score, distance, powerNodes, session_bits, multiplier, runHash, startTime, playerAddress, gameState, challengeProgress, newlyUnlockedChallenges, isPracticeMode } = get();
         if (gameState !== 'PLAYING') return;
         
         set({ gameState: 'SUBMITTING', score: score * get().streakMultiplier });
@@ -175,7 +192,8 @@ export const useCyberRunnerStore = create(
             event: 'GAME_OVER',
             score: Math.floor(score * get().streakMultiplier),
             distance: Math.floor(distance),
-            powerNodes
+            powerNodes,
+            bits_collected: session_bits
           });
           get().initializeSession();
           return;
@@ -191,6 +209,7 @@ export const useCyberRunnerStore = create(
             score: Math.floor(score * get().streakMultiplier),
             distance: Math.floor(distance),
             powerNodes,
+            bits_collected: session_bits,
             multiplier,
             elapsedTimeSec,
             runHash
@@ -200,7 +219,8 @@ export const useCyberRunnerStore = create(
             event: 'GAME_OVER',
             score: Math.floor(score * get().streakMultiplier),
             distance: Math.floor(distance),
-            powerNodes
+            powerNodes,
+            bits_collected: session_bits
           });
           get().initializeSession();
         } catch (error) {
@@ -244,9 +264,16 @@ export const useCyberRunnerStore = create(
         let pts = 0;
         let newShield = state.hasShield;
         let newMagnet = state.hasMagnet;
+        let bitsEarned = 0;
 
-        if (type === 'cyan') pts = 50;
-        if (type === 'gold') pts = 200;
+        if (type === 'cyan') {
+          pts = 50;
+          bitsEarned = 1;
+        }
+        if (type === 'gold') {
+          pts = 200;
+          bitsEarned = 5;
+        }
         if (type === 'shield') {
           newShield = true;
           get().addToast('SYSTEM UPDATE', 'Shield Module Online');
@@ -265,6 +292,8 @@ export const useCyberRunnerStore = create(
         return {
           score: newScore,
           powerNodes: newPowerNodes,
+          session_bits: state.session_bits + bitsEarned,
+          total_bits_balance: state.total_bits_balance + bitsEarned,
           hasShield: newShield,
           hasMagnet: newMagnet,
           challengeProgress: newProgress
@@ -312,6 +341,8 @@ export const useCyberRunnerStore = create(
         distance: state.distance,
         gameState: state.gameState,
         powerNodes: state.powerNodes,
+        total_bits_balance: state.total_bits_balance,
+        claimable_erc20_allowance: state.claimable_erc20_allowance,
         multiplier: state.multiplier,
         streakMultiplier: state.streakMultiplier,
         hasShield: state.hasShield,

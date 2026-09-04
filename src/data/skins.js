@@ -6,7 +6,13 @@ export const SKINS = [
     primaryColor: '#00f0ff',
     shadowColor: 'rgba(0, 240, 255, 0.6)',
     glowIntensity: 15,
-    effect: 'none'
+    effect: 'none',
+    rarity: 'Common',
+    max_supply: Infinity,
+    circulating_supply: 0,
+    price_bits: 0,
+    requires_token_gate: false,
+    perk: 'None'
   },
   {
     id: 'gold',
@@ -15,7 +21,13 @@ export const SKINS = [
     primaryColor: '#ffb700',
     shadowColor: 'rgba(255, 183, 0, 0.7)',
     glowIntensity: 25,
-    effect: 'pulse'
+    effect: 'pulse',
+    rarity: 'Rare',
+    max_supply: 500,
+    circulating_supply: 485,
+    price_bits: 1500,
+    requires_token_gate: true,
+    perk: '+5% AX-BITS multiplier'
   },
   {
     id: 'ghost',
@@ -24,7 +36,13 @@ export const SKINS = [
     primaryColor: '#ff007f',
     shadowColor: 'rgba(255, 0, 127, 0.5)',
     glowIntensity: 20,
-    effect: 'ghost'
+    effect: 'ghost',
+    rarity: 'Legendary',
+    max_supply: 25,
+    circulating_supply: 25,
+    price_bits: 5000,
+    requires_token_gate: true,
+    perk: 'Start with Shield'
   },
   {
     id: 'emerald',
@@ -33,6 +51,12 @@ export const SKINS = [
     primaryColor: '#00ff9d',
     shadowColor: 'rgba(0, 255, 157, 0.6)',
     glowIntensity: 18,
-    effect: 'trail'
+    effect: 'trail',
+    rarity: 'Rare',
+    max_supply: 150,
+    circulating_supply: 130,
+    price_bits: 2500,
+    requires_token_gate: true,
+    perk: '+10% Score multiplier'
   }
 ];

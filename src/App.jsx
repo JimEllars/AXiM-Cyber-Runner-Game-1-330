@@ -9,13 +9,14 @@ import ChallengesModal from './components/ChallengesModal';
 import ThemeSelectorModal from './components/ThemeSelectorModal';
 import AchievementToast from './components/AchievementToast';
 import { useCyberRunnerStore } from './store/useCyberRunnerStore';
+import { runnerApi } from './services/api';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from './common/SafeIcon';
 
 const { FiCpu, FiZap, FiActivity, FiLayers, FiTarget, FiMonitor } = FiIcons;
 
 function App() {
-  const { crtEnabled, initializeSession, ticketStatus, setIsPaused } = useCyberRunnerStore();
+  const { crtEnabled, initializeSession, ticketStatus, setIsPaused, mergeGuestBits, setPlayerState, addToast } = useCyberRunnerStore();
 
   const [showGate, setShowGate] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
@@ -24,7 +25,28 @@ function App() {
   const [showThemes, setShowThemes] = useState(false);
 
   useEffect(() => {
-    initializeSession();
+    const initializeApp = async () => {
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get('token');
+      if (token) {
+        try {
+          // Validate via API (using mock endpoint)
+          const sessionData = await runnerApi.validateToken(token);
+          // Set player state and merge guest bits
+          setPlayerState({ address: sessionData.address, total_bits_balance: sessionData.cloud_bits, claimable_erc20_allowance: sessionData.claimable_erc20_allowance, hasSeenTutorial: sessionData.hasSeenTutorial });
+          mergeGuestBits(sessionData.cloud_bits);
+          addToast('SSO AUTHENTICATED', 'Welcome back, Runner.', 'success');
+          // Strip ?token=
+          const url = new URL(window.location.href);
+          url.searchParams.delete('token');
+          window.history.replaceState({}, document.title, url.toString());
+        } catch (e) {
+          console.error("SSO Token Validation Failed", e);
+        }
+      }
+      initializeSession();
+    };
+    initializeApp();
   }, []);
 
   useEffect(() => {

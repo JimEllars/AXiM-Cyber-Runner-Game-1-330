@@ -11,7 +11,7 @@ const RunnerHUD = () => {
   const { 
     gameState, score, distance, multiplier, streakMultiplier, challengeProgress, hasShield,
     crtEnabled, toggleCrt, isMuted, toggleMute, startGame, startPracticeMode, ticketStatus, addToast,
-    hasSeenTutorial, setHasSeenTutorial, isPracticeMode
+    hasSeenTutorial, setHasSeenTutorial, isPracticeMode, playerAddress, session_bits
   } = useCyberRunnerStore();
 
   React.useEffect(() => {
@@ -134,7 +134,7 @@ const RunnerHUD = () => {
             <div className="mb-2 text-neon-magenta text-[10px] tracking-[0.5em] font-bold">CRITICAL ERROR</div>
             <h2 className="text-4xl text-neon-magenta text-glow-magenta mb-6 font-black italic tracking-tighter">TERMINATED</h2>
             
-            <div className="grid grid-cols-2 gap-4 mb-6 text-left border-y border-white/10 py-4">
+            <div className="grid grid-cols-2 gap-4 mb-4 text-left border-y border-white/10 py-4">
               <div>
                 <div className="text-[9px] text-gray-500 uppercase">Total Score</div>
                 <div className="text-xl text-neon-cyan font-bold">{Math.floor(score).toLocaleString()}</div>
@@ -144,6 +144,22 @@ const RunnerHUD = () => {
                 <div className="text-xl text-white font-bold">{Math.floor(distance)}m</div>
               </div>
             </div>
+
+            {/* SSO / Guest Banner */}
+            {isPracticeMode && session_bits > 0 && (
+              <div className="mb-4 bg-blue-900/40 border border-blue-500/50 p-3 rounded-lg text-left shadow-[0_0_15px_rgba(0,100,255,0.2)]">
+                <div className="text-blue-300 text-xs font-bold mb-1 uppercase tracking-wider">Guest Mode Detected</div>
+                <p className="text-gray-300 text-[10px] leading-tight mb-2">
+                  You earned <span className="text-neon-gold font-bold">{session_bits} AX-BITS</span>! Sign in with AXiM Passport to bank your tokens and claim limited skins.
+                </p>
+                <a
+                  href={`https://passport.axim.us.com/login?redirect=${encodeURIComponent(window.location.href)}`}
+                  className="inline-block w-full py-1.5 bg-blue-500 hover:bg-blue-400 text-black text-center text-[10px] uppercase font-bold tracking-widest rounded transition-colors"
+                >
+                  Connect Passport
+                </a>
+              </div>
+            )}
 
             <div className="mb-6">
               <div className="text-[8px] text-gray-500 uppercase tracking-widest mb-3 flex items-center justify-center gap-2">

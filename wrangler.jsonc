@@ -23,4 +23,15 @@
   "triggers": {
     "crons": ["0 0 * * 0"]
   }
+,
+  "kv_namespaces": [
+    {
+      "binding": "LEADERBOARD_KV",
+      "id": "leaderboard_kv_namespace_id"
+    },
+    {
+      "binding": "RUNNER_STATE",
+      "id": "runner_state_kv_namespace_id"
+    }
+  ]
 }
