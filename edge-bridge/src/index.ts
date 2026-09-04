@@ -1,5 +1,6 @@
 export interface Env {
   RUNNER_STATE: KVNamespace;
+  LEADERBOARD_KV: KVNamespace;
   AXIM_INTERNAL_KEY: string;
   SUPABASE_URL: string;
   SUPABASE_SERVICE_KEY: string;
@@ -125,7 +126,7 @@ export default {
     }
 
     // 1. Ticket Status Check & Free Daily Allocation
-    if (request.method === "GET" && url.pathname === "/api/v1/runner/ticket-status") {
+    if (request.method === "GET" && url.pathname === "/api/v1/game/ticket-status") {
       const address = url.searchParams.get("address")?.toLowerCase();
       if (!address) {
         return new Response(JSON.stringify({ error: "Missing wallet address" }), { status: 400, headers: CORS_HEADERS });
@@ -144,7 +145,7 @@ export default {
     }
 
     // 2. Score Ingestion & Anti-Cheat Validation
-    if (request.method === "POST" && url.pathname === "/api/v1/runner/submit-run") {
+    if (request.method === "POST" && url.pathname === "/api/v1/game/runs/complete") {
       const startTime = Date.now();
 
         if (!checkRateLimit(ip)) {
@@ -255,9 +256,14 @@ export default {
 
         if (!dbRes.ok) throw new Error("Core API DB Ingestion Failed");
 
+
         // Mark Daily Free Run Consumed
         const today = new Date().toISOString().split("T")[0];
         await env.RUNNER_STATE.put(`daily_run:${playerAddress.toLowerCase()}:${today}`, "1", { expirationTtl: 86400 });
+
+        // Invalidate KV cache asynchronously
+        ctx.waitUntil(env.LEADERBOARD_KV.delete("global_top_100"));
+
 
         const latency = Date.now() - startTime;
         ctx.waitUntil(
@@ -287,55 +293,51 @@ export default {
     }
 
 
-    // 3. Leaderboard Edge Cache
-    if (request.method === "GET" && url.pathname === "/api/v1/runner/leaderboard") {
-      const cacheUrl = new URL(request.url);
-      const cacheKey = new Request(cacheUrl.toString(), request);
-      const cache = caches.default;
-
-      let response = await cache.match(cacheKey);
-
-      if (!response) {
-        // Fetch from Supabase
-        const dbRes = await fetch(`${env.SUPABASE_URL}/rest/v1/cyber_runner_runs?status=eq.completed&order=score.desc&limit=100`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${env.SUPABASE_SERVICE_KEY}`,
-            "apikey": env.SUPABASE_SERVICE_KEY,
-          }
-        });
-
-        if (!dbRes.ok) {
-           return new Response(JSON.stringify({ error: "Failed to fetch leaderboard" }), { status: 500, headers: CORS_HEADERS });
-        }
-
-        const data = await dbRes.json();
-
-        response = new Response(JSON.stringify(data), {
+    // 3. Leaderboard Edge Cache (KV)
+    if (request.method === "GET" && url.pathname === "/api/v1/game/leaderboard") {
+      const cached = await env.LEADERBOARD_KV.get("global_top_100");
+      if (cached) {
+        return new Response(cached, {
           status: 200,
           headers: {
             ...CORS_HEADERS,
             "Content-Type": "application/json",
-            "Cache-Control": "public, max-age=60" // Cache for 60 seconds
+            "Cache-Control": "public, max-age=60"
           }
         });
-
-        ctx.waitUntil(cache.put(cacheKey, response.clone()));
-      } else {
-        // Ensure CORS headers are on cached response
-        response = new Response(response.body, response);
-        for (const [key, value] of Object.entries(CORS_HEADERS)) {
-           response.headers.set(key, value);
-        }
       }
 
-      return response;
+      const dbRes = await fetch(`${env.SUPABASE_URL}/rest/v1/cyber_runner_runs?status=eq.completed&order=score.desc&limit=100`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${env.SUPABASE_SERVICE_KEY}`,
+          "apikey": env.SUPABASE_SERVICE_KEY,
+        }
+      });
+
+      if (!dbRes.ok) {
+         return new Response(JSON.stringify({ error: "Failed to fetch leaderboard" }), { status: 500, headers: CORS_HEADERS });
+      }
+
+      const data = await dbRes.json();
+      const responseText = JSON.stringify(data);
+
+      ctx.waitUntil(env.LEADERBOARD_KV.put("global_top_100", responseText, { expirationTtl: 60 }));
+
+      return new Response(responseText, {
+        status: 200,
+        headers: {
+          ...CORS_HEADERS,
+          "Content-Type": "application/json",
+          "Cache-Control": "public, max-age=60"
+        }
+      });
     }
 
 
     // 4. Achievement Sync
-    if (request.method === "POST" && url.pathname === "/api/v1/runner/sync-achievements") {
+    if (request.method === "POST" && url.pathname === "/api/v1/game/sync-achievements") {
       if (!checkRateLimit(ip)) {
         return new Response(JSON.stringify({ success: true, status: "rate_limited" }), {
           status: 200,
