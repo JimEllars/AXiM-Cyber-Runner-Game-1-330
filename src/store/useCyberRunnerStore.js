@@ -105,7 +105,12 @@ export const useCyberRunnerStore = create(
 
       setHasSeenTutorial: (val) => set({ hasSeenTutorial: val }),
 
-      setSkin: (skinId) => set({ selectedSkinId: skinId }),
+      setSkin: (skinId) => {
+        set({ selectedSkinId: skinId });
+        if (window.syncChannel) {
+          window.syncChannel.postMessage({ type: 'SYNC_STATE', payload: { selectedSkinId: skinId, total_bits_balance: get().total_bits_balance } });
+        }
+      },
       setTheme: (themeId) => {
         set({ selectedThemeId: themeId });
         get().addToast('THEME APPLIED', `Interface shifted to ${themeId.toUpperCase()}`);
@@ -289,7 +294,7 @@ export const useCyberRunnerStore = create(
         const newProgress = { ...state.challengeProgress, cumulative_nodes: state.challengeProgress.cumulative_nodes + 1 };
         get().checkChallengeThresholds(state.challengeProgress, newProgress);
 
-        return {
+        const newState = {
           score: newScore,
           powerNodes: newPowerNodes,
           session_bits: state.session_bits + bitsEarned,
@@ -298,6 +303,12 @@ export const useCyberRunnerStore = create(
           hasMagnet: newMagnet,
           challengeProgress: newProgress
         };
+
+        if (bitsEarned > 0 && window.syncChannel) {
+          window.syncChannel.postMessage({ type: 'SYNC_STATE', payload: { selectedSkinId: state.selectedSkinId, total_bits_balance: newState.total_bits_balance } });
+        }
+
+        return newState;
       }),
 
       hitObstacle: () => {
@@ -364,3 +375,28 @@ export const useCyberRunnerStore = create(
     }
   )
 );
+
+// Setup BroadcastChannel for cross-tab sync
+if (typeof window !== 'undefined' && window.BroadcastChannel) {
+  const syncChannel = new BroadcastChannel('axim_arcade_sync');
+  window.syncChannel = syncChannel;
+
+  syncChannel.onmessage = (event) => {
+    if (event.data && event.data.type === 'SYNC_STATE') {
+      const { selectedSkinId, total_bits_balance } = event.data.payload;
+      const currentState = useCyberRunnerStore.getState();
+
+      const updates = {};
+      if (selectedSkinId !== undefined && selectedSkinId !== currentState.selectedSkinId) {
+        updates.selectedSkinId = selectedSkinId;
+      }
+      if (total_bits_balance !== undefined && total_bits_balance !== currentState.total_bits_balance) {
+        updates.total_bits_balance = total_bits_balance;
+      }
+
+      if (Object.keys(updates).length > 0) {
+        useCyberRunnerStore.setState(updates);
+      }
+    }
+  };
+}
