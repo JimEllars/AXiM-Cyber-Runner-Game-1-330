@@ -78,6 +78,7 @@ export const useCyberRunnerStore = create(
             powerNodes: 0,
             newlyUnlockedChallenges: [],
             isPaused: false,
+            isPracticeMode: false,
             runHash: null,
             startTime: null,
             ticketStatus: { freeRunAvailable: true }
@@ -115,9 +116,25 @@ export const useCyberRunnerStore = create(
 
       },
       
+      startPracticeMode: () => {
+        set({
+          gameState: 'PLAYING',
+          score: 0,
+          distance: 0,
+          powerNodes: 0,
+          hasShield: false,
+          hasMagnet: false,
+          multiplier: 1.0,
+          isPaused: false,
+          runHash: crypto.randomUUID(),
+          startTime: Date.now(),
+          newlyUnlockedChallenges: [],
+          isPracticeMode: true
+        });
+      },
       startGame: () => {
         set({ 
-          gameState: 'PLAYING', 
+          gameState: 'PLAYING',
           score: 0, 
           distance: 0, 
           powerNodes: 0, 
@@ -127,12 +144,13 @@ export const useCyberRunnerStore = create(
           isPaused: false,
           runHash: crypto.randomUUID(),
           startTime: Date.now(),
-          newlyUnlockedChallenges: []
+          newlyUnlockedChallenges: [],
+          isPracticeMode: false
         });
       },
       
             endGame: async () => {
-        const { score, distance, powerNodes, multiplier, runHash, startTime, playerAddress, gameState, challengeProgress, newlyUnlockedChallenges } = get();
+        const { score, distance, powerNodes, multiplier, runHash, startTime, playerAddress, gameState, challengeProgress, newlyUnlockedChallenges, isPracticeMode } = get();
         if (gameState !== 'PLAYING') return;
         
         set({ gameState: 'SUBMITTING', score: score * get().streakMultiplier });
@@ -151,7 +169,19 @@ export const useCyberRunnerStore = create(
 
         set({ challengeProgress: newProgress });
 
-                try {
+                if (isPracticeMode) {
+          set({ gameState: 'GAMEOVER' });
+          get().broadcastEvent({
+            event: 'GAME_OVER',
+            score: Math.floor(score * get().streakMultiplier),
+            distance: Math.floor(distance),
+            powerNodes
+          });
+          get().initializeSession();
+          return;
+        }
+
+        try {
           if (newlyUnlockedChallenges && newlyUnlockedChallenges.length > 0) {
             runnerApi.syncAchievements({ playerAddress, unlockedIds: newlyUnlockedChallenges }).catch(e => console.error("Sync error", e));
           }
@@ -289,7 +319,8 @@ export const useCyberRunnerStore = create(
         runHash: state.runHash,
         startTime: state.startTime,
         isPaused: state.isPaused,
-        hasSeenTutorial: state.hasSeenTutorial
+        hasSeenTutorial: state.hasSeenTutorial,
+        isPracticeMode: state.isPracticeMode
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {

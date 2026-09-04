@@ -51,3 +51,14 @@ To verify the worker's reset state:
 3. In the game over screen, note your current score and distance.
 4. Restart the game by clicking "Run Again".
 5. Observe that the obstacles and nodes begin spawning correctly and the game's speed/distance counters do not instantly resume from the values prior to the crash, confirming that the internal physics distance and accumulators have been properly cleared by the RESET message.
+### Wagmi Balance Fetch Verification Steps
+
+To verify the integration of the user's AXiM token balance via Wagmi, follow these steps:
+1.  **Launch Local Environment:** Ensure the local dev server is running (\`npm run dev\`).
+2.  **Connect Wallet:** Click "Connect Wallet" (or interact with the SIWE flow) using a Web3 wallet (e.g., MetaMask, Rabby). Ensure you are connected to the Arbitrum mainnet.
+3.  **Exhaust Daily Run:** If your daily ticket is still available, play one round to consume it so that the Token Gate becomes active.
+4.  **Trigger the Modal:** Click on the "Start Run" button again. Because you don't have a free run, the \`TokenGateModal\` will pop up.
+5.  **Observe Balance:** Look inside the modal above the action buttons. You will see a line indicating your current AXiM balance (\`Balance: XXX AXiM\`).
+6.  **Verify Button States:**
+    *   If your balance is `< 5`, the button text will display **"Insufficient Balance"**, the button will be disabled, and a discrete link will appear below pointing to \`https://axim.us.com/swap\`.
+    *   If your balance is `>= 5`, the button text will be **"Pay 5.00 AXiM"** and will be clickable.

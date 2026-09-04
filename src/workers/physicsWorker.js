@@ -144,8 +144,15 @@ self.onmessage = function(e) {
     }
     nodes = nextNodes;
 
-    // Spawning logic
-    if (Math.random() > 0.985) {
+    // Spawning logic with DDA (Dynamic Difficulty Adjustment)
+    // Minimum gap decreases as t increases to increase difficulty without changing velocity curve
+    let minGap = Math.max(300, 600 - (t * 5)); // starts at 600, decreases by 5 per second, minimum 300
+    let lastObstacleX = -1000;
+    if (obstacles.length > 0) {
+        lastObstacleX = obstacles[obstacles.length - 1].x;
+    }
+
+    if (Math.random() > 0.985 && (spawnDistance - lastObstacleX) > minGap) {
         const isHigh = Math.random() > 0.5;
         obstacles.push({
             x: spawnDistance,

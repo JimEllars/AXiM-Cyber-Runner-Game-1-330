@@ -34,9 +34,12 @@ function App() {
     };
 
     window.addEventListener('message', handleMessage);
+    const handleOpenGate = () => setShowGate(true);
+    window.addEventListener('OPEN_TOKEN_GATE', handleOpenGate);
 
     return () => {
       window.removeEventListener('message', handleMessage);
+      window.removeEventListener('OPEN_TOKEN_GATE', handleOpenGate);
     };
   }, []);
 
