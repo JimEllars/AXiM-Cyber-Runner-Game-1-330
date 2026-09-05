@@ -62,3 +62,22 @@ To verify the integration of the user's AXiM token balance via Wagmi, follow the
 6.  **Verify Button States:**
     *   If your balance is `< 5`, the button text will display **"Insufficient Balance"**, the button will be disabled, and a discrete link will appear below pointing to \`https://axim.us.com/swap\`.
     *   If your balance is `>= 5`, the button text will be **"Pay 5.00 AXiM"** and will be clickable.
+
+## Testing Cross-Tab State Synchronization
+
+To verify the `BroadcastChannel` synchronization works correctly, follow these steps:
+
+1. Open a new terminal and run `npm run dev` to start the local development server.
+2. Open two separate browser tabs and navigate to `http://localhost:5173` (or the URL provided by Vite) in both of them.
+3. Arrange the two browser tabs side-by-side so you can see them both at the same time.
+4. **Test Skin Selection Sync:**
+   - In Tab A, open the Skin Vault (Asset Vault) from the HUD.
+   - Equip a different skin.
+   - Observe Tab B: the player's character skin in the background/idle state (if visible) or in the HUD should update immediately. Open the Skin Vault in Tab B to verify the "Equipped" status has synced.
+5. **Test Currency (AX-BITS) Sync:**
+   - In Tab A, click "Start Run" and play the game for a bit, making sure to collect some cyan/gold nodes (which grant AX-BITS).
+   - Intentionally end the run. The total AX-BITS balance is updated.
+   - Switch to Tab B and open the "Asset Claim" (Vault) modal.
+   - Verify that the "Total AX-BITS Balance" matches the new balance earned from the run in Tab A.
+
+This confirms that the native `BroadcastChannel` API is successfully syncing the `selectedSkinId` and `total_bits_balance` across tabs via the Zustand store.

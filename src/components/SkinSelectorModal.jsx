@@ -113,18 +113,22 @@ const SkinSelectorModal = ({ isOpen, onClose }) => {
                         <span className="text-gray-400 uppercase">Mint Price:</span>
                         <span className="text-neon-cyan font-bold">{skin.price_bits.toLocaleString()} AX-BITS</span>
                       </div>
-                      <button
-                        disabled={isSoldOut}
-                        className={`w-full py-2 text-[10px] uppercase font-bold tracking-wider rounded transition-all flex items-center justify-center gap-2 ${isSoldOut ? 'bg-gray-800 text-gray-500 border border-gray-700 cursor-not-allowed' : 'bg-neon-magenta/20 text-neon-magenta hover:bg-neon-magenta/40 border border-neon-magenta'}`}
-                      >
-                        {isSoldOut ? (
-                          <>Sold Out — Trade on AXiM Market Soon</>
-                        ) : (
-                          <>
-                            <SafeIcon icon={FiLock} /> Mint Asset
-                          </>
-                        )}
-                      </button>
+                      {isSoldOut ? (
+                        <a
+                          href="https://axim.us.com/marketplace"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full py-2 text-[10px] uppercase font-bold tracking-wider rounded transition-all flex items-center justify-center gap-2 bg-blue-900/40 text-blue-400 hover:bg-blue-800/60 border border-blue-500 hover:border-blue-400 shadow-[0_0_10px_rgba(0,100,255,0.2)]"
+                        >
+                          <SafeIcon icon={FiIcons.FiExternalLink} /> Trade on AXiM Marketplace
+                        </a>
+                      ) : (
+                        <button
+                          className="w-full py-2 text-[10px] uppercase font-bold tracking-wider rounded transition-all flex items-center justify-center gap-2 bg-neon-magenta/20 text-neon-magenta hover:bg-neon-magenta/40 border border-neon-magenta"
+                        >
+                          <SafeIcon icon={FiLock} /> Mint Asset
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>

@@ -1,0 +1,83 @@
+import React, { useState } from 'react';
+import * as FiIcons from 'react-icons/fi';
+import SafeIcon from '../common/SafeIcon';
+import { useCyberRunnerStore } from '../store/useCyberRunnerStore';
+
+const { FiX, FiDatabase, FiCpu, FiExternalLink } = FiIcons;
+
+const ClaimModal = ({ isOpen, onClose }) => {
+  const { total_bits_balance, claimable_erc20_allowance, addToast } = useCyberRunnerStore();
+  const [isMinting, setIsMinting] = useState(false);
+
+  const handleMint = () => {
+    setIsMinting(true);
+    setTimeout(() => {
+      setIsMinting(false);
+      addToast('MINTING QUEUED', 'Minting queued on Arbitrum Testnet', 'achievement');
+      onClose();
+    }, 1500);
+  };
+
+  return (
+    <div
+      className={`fixed inset-0 bg-black/90 flex items-center justify-center z-50 backdrop-blur-md transition-opacity duration-300 ${
+        isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+      }`}
+    >
+      <div
+        className={`bg-neon-bg border-2 border-neon-cyan p-6 max-w-md w-full rounded-lg shadow-[0_0_40px_rgba(0,240,255,0.3)] font-mono transform transition-all duration-300 ${
+          isOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'
+        }`}
+      >
+        <div className="flex justify-between items-center mb-6 border-b border-neon-cyan/30 pb-4">
+          <h3 className="text-xl text-neon-cyan font-bold flex items-center gap-2">
+            <SafeIcon icon={FiDatabase} /> ASSET CLAIM
+          </h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-white" disabled={isMinting}>
+            <SafeIcon icon={FiX} className="text-2xl" />
+          </button>
+        </div>
+
+        <div className="flex flex-col gap-6 mb-6">
+          <div className="bg-white/5 border border-white/10 p-4 rounded-lg flex flex-col items-center">
+            <span className="text-gray-400 text-xs uppercase mb-1">Total AX-BITS Balance</span>
+            <span className="text-2xl text-neon-gold font-bold">{total_bits_balance.toLocaleString()}</span>
+          </div>
+
+          <div className="bg-neon-cyan/5 border border-neon-cyan/20 p-4 rounded-lg flex flex-col items-center">
+            <span className="text-neon-cyan text-xs uppercase mb-1 flex items-center gap-2">
+               <SafeIcon icon={FiCpu} /> Claimable ERC-20 Allowance
+            </span>
+            <span className="text-3xl text-neon-cyan font-bold drop-shadow-[0_0_10px_rgba(0,240,255,0.5)]">
+              {claimable_erc20_allowance.toLocaleString()}
+            </span>
+          </div>
+        </div>
+
+        <button
+          onClick={handleMint}
+          disabled={isMinting || claimable_erc20_allowance <= 0}
+          className={`w-full py-3 font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-2 transition-all rounded ${
+            isMinting
+              ? 'bg-gray-800 text-gray-500 cursor-wait'
+              : claimable_erc20_allowance <= 0
+              ? 'bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700'
+              : 'bg-neon-cyan text-black hover:brightness-125 hover:shadow-[0_0_20px_rgba(0,240,255,0.4)]'
+          }`}
+        >
+          {isMinting ? (
+            <>
+              <SafeIcon icon={FiIcons.FiLoader} className="animate-spin" /> Processing...
+            </>
+          ) : (
+            <>
+              <SafeIcon icon={FiExternalLink} /> Mint to Arbitrum
+            </>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default ClaimModal;

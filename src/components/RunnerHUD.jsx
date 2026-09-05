@@ -1,13 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useCyberRunnerStore } from '../store/useCyberRunnerStore';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 import { generateShareData, copyToClipboard, nativeShare } from '../utils/shareHelpers';
 import { requestFullscreen } from '../utils/fullscreen';
+import ClaimModal from './ClaimModal';
 
-const { FiShield, FiZap, FiPlay, FiRefreshCw, FiLoader, FiTwitter, FiSend, FiCopy, FiShare2, FiVolume2, FiVolumeX } = FiIcons;
+const { FiShield, FiZap, FiPlay, FiRefreshCw, FiLoader, FiTwitter, FiSend, FiCopy, FiShare2, FiVolume2, FiVolumeX, FiDatabase } = FiIcons;
 
 const RunnerHUD = () => {
+  const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
   const { 
     gameState, score, distance, multiplier, streakMultiplier, challengeProgress, hasShield,
     crtEnabled, toggleCrt, isMuted, toggleMute, startGame, startPracticeMode, ticketStatus, addToast,
@@ -88,6 +90,13 @@ const RunnerHUD = () => {
           <div className="flex items-center gap-2 text-neon-gold border border-neon-gold/50 bg-neon-gold/5 px-3 py-1 rounded shadow-[0_0_10px_rgba(255,183,0,0.2)]">
             <SafeIcon icon={FiZap} /> {multiplier.toFixed(2)}x MULT
           </div>
+
+          <button
+            onClick={() => setIsClaimModalOpen(true)}
+            title="Asset Claim" aria-label="Asset Claim" role="button" className="pointer-events-auto flex items-center justify-center p-2 rounded-full border border-gray-700 bg-black/40 hover:bg-gray-800 text-neon-cyan transition-colors focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
+          >
+            <SafeIcon icon={FiDatabase} size={16} />
+          </button>
           <button
             onClick={toggleMute}
 
@@ -235,6 +244,7 @@ const RunnerHUD = () => {
           <span>[DOUBLE JUMP] AIR JUMP</span>
         </div>
       )}
+      <ClaimModal isOpen={isClaimModalOpen} onClose={() => setIsClaimModalOpen(false)} />
     </div>
   );
 };
