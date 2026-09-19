@@ -13,3 +13,12 @@ export const requestFullscreen = () => {
     });
   }
 };
+export const exitFullscreen = () => {
+  if (document.exitFullscreen) {
+    document.exitFullscreen().catch((err) => console.warn(err));
+  } else if (document.webkitExitFullscreen) { /* Safari */
+    document.webkitExitFullscreen().catch((err) => console.warn(err));
+  } else if (document.msExitFullscreen) { /* IE11 */
+    document.msExitFullscreen().catch((err) => console.warn(err));
+  }
+};

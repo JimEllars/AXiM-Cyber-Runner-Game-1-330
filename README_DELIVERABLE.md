@@ -1,93 +1,30 @@
-# Sprint 18 Deliverable: AXiM Brand Integration & Disconnect Polish
+# Deliverables for AXiM Cyber Runner - Phase 15
 
-## Updates Made
+### Implementation Details:
 
-1. **Brand Integration (`src/components/RunnerHUD.jsx`)**
-   - Injected the AXiM primary logo into the top-left section of the HUD.
-   - Constrained it using responsive max-widths (`max-w-[120px] md:max-w-[150px]`) and applied a hover opacity effect (`hover:opacity-80`).
-   - Linked to `https://axim.us.com/games` with safety properties (`target="_blank"`, `rel="noopener noreferrer"`) to prevent active game session disruption.
-   - Utilized `decoding="async"` on the image element for zero-downtime performance.
+1. **Global Exit Navigation**:
+   - Added a clear "X" icon to the top right of the HUD.
+   - It gracefully calls `exitFullscreen` and navigates to `https://axim.us.com/games`.
+   - Has a high z-index and is accessible.
 
-2. **Wallet Disconnect State (`src/components/TokenGateModal.jsx` & `src/store/useCyberRunnerStore.js`)**
-   - Imported the `useAccount` hook from `wagmi` in `TokenGateModal.jsx`.
-   - Setup a `useEffect` hook to observe `isDisconnected`. If a user disconnects their wallet (e.g., directly via MetaMask), it explicitly triggers the local state flush using `syncWalletAddress(null)`.
-   - Enhanced `syncWalletAddress` in the store to also wipe `ticketStatus` back to its baseline `{ freeRunAvailable: true }`, ensuring the player is completely unauthenticated and returned to "Practice Mode".
+2. **BroadcastChannel Loop Prevention**:
+   - Updated the `syncChannel.onmessage` handler in `src/store/useCyberRunnerStore.js`.
+   - Before setting state, it now correctly compares the incoming `total_bits_balance` and `selectedSkinId` (which was already there in the basic implementation) to strictly ensure they are different, preventing the infinite loop. The payload comparison is correctly managed.
 
-## Testing Steps
+3. **Web3 Network Guard**:
+   - Integrated `useChainId` and `useSwitchChain` hooks from `wagmi` into `ClaimModal.jsx`.
+   - Checks if `chainId === 42161` (Arbitrum One).
+   - If not, the button prompts "Switch to Arbitrum Network" and calls `switchChain` when clicked.
 
-**Verifying the External Link Behavior:**
-1. Boot the application locally (`npm run dev`) and open the game in your browser.
-2. Observe the AXiM logo in the top left corner of the HUD (visible immediately without blocking the Canvas).
-3. Click the AXiM logo. It should open `https://axim.us.com/games` in a *new tab* (target="_blank"), leaving the game instance unaffected and safe in the original tab.
+### Testing Steps to Verify Web3 Network Guard:
 
-**Verifying the Wallet Disconnect Flush:**
-1. Connect your Web3 wallet provider (e.g., via a Connect button if present, or mocking it in the environment).
-2. Start the game or trigger the `TokenGateModal` to appear (by exhausting the daily run).
-3. Open your wallet provider extension (e.g., MetaMask) and manually disconnect the active account.
-4. The Wagmi `useAccount` hook will detect this event (`isDisconnected === true`) and flush the Zustand store (`syncWalletAddress(null)`).
-5. Confirm that the application has reverted to a clean slate (score 0, unauthenticated state, and daily ticket refreshed to `freeRunAvailable: true`).
+To simulate a wrong-network state and verify the Claim Modal guard, follow these steps:
 
-## Testing Step 1: AXiM Logo & External Link
-1. Inspect RunnerHUD component.
-2. Verify the logo image is fetched from the correct wp.axim.us.com URL.
-3. Verify it is wrapped in an anchor tag linking to https://axim.us.com/games with target=_blank and rel=noopener noreferrer.
-4. Verify mobile safe-area classes pt-[env(safe-area-inset-top)] pl-[env(safe-area-inset-left)] are applied to ensure it does not overlap with device notches.
-
-## Testing Step 2: Canvas Resize Debouncing
-1. Inspect RunnerCanvas component.
-2. Verify the resize event handler logic uses a debounce utility/timeout (e.g., 150ms) to throttle updates when the window is resized rapidly.
-3. Test by simulating a device rotation or rapidly resizing the browser window, ensuring the canvas updates correctly after the debounced delay without freezing the UI thread.
-
-## Testing Step 3: SIWE Session Expiry Check
-1. Inspect TokenGateModal.jsx and api.js.
-2. Verify runnerApi.checkSession() has been added to api.js.
-3. Verify handleBuyTicket in TokenGateModal.jsx calls runnerApi.checkSession() before proceeding with the transaction.
-4. If checkSession fails, ensure a toast notification SESSION EXPIRED: Re-sign to verify session is displayed and the token transfer does not proceed.
-
-## Testing the Worker Reset State
-To verify the worker's reset state:
-1. Start the game by clicking "Play Practice Mode".
-2. Die to an obstacle to trigger the game over state.
-3. In the game over screen, note your current score and distance.
-4. Restart the game by clicking "Run Again".
-5. Observe that the obstacles and nodes begin spawning correctly and the game's speed/distance counters do not instantly resume from the values prior to the crash, confirming that the internal physics distance and accumulators have been properly cleared by the RESET message.
-### Wagmi Balance Fetch Verification Steps
-
-To verify the integration of the user's AXiM token balance via Wagmi, follow these steps:
-1.  **Launch Local Environment:** Ensure the local dev server is running (\`npm run dev\`).
-2.  **Connect Wallet:** Click "Connect Wallet" (or interact with the SIWE flow) using a Web3 wallet (e.g., MetaMask, Rabby). Ensure you are connected to the Arbitrum mainnet.
-3.  **Exhaust Daily Run:** If your daily ticket is still available, play one round to consume it so that the Token Gate becomes active.
-4.  **Trigger the Modal:** Click on the "Start Run" button again. Because you don't have a free run, the \`TokenGateModal\` will pop up.
-5.  **Observe Balance:** Look inside the modal above the action buttons. You will see a line indicating your current AXiM balance (\`Balance: XXX AXiM\`).
-6.  **Verify Button States:**
-    *   If your balance is `< 5`, the button text will display **"Insufficient Balance"**, the button will be disabled, and a discrete link will appear below pointing to \`https://axim.us.com/swap\`.
-    *   If your balance is `>= 5`, the button text will be **"Pay 5.00 AXiM"** and will be clickable.
-
-## Testing Cross-Tab State Synchronization
-
-To verify the `BroadcastChannel` synchronization works correctly, follow these steps:
-
-1. Open a new terminal and run `npm run dev` to start the local development server.
-2. Open two separate browser tabs and navigate to `http://localhost:5173` (or the URL provided by Vite) in both of them.
-3. Arrange the two browser tabs side-by-side so you can see them both at the same time.
-4. **Test Skin Selection Sync:**
-   - In Tab A, open the Skin Vault (Asset Vault) from the HUD.
-   - Equip a different skin.
-   - Observe Tab B: the player's character skin in the background/idle state (if visible) or in the HUD should update immediately. Open the Skin Vault in Tab B to verify the "Equipped" status has synced.
-5. **Test Currency (AX-BITS) Sync:**
-   - In Tab A, click "Start Run" and play the game for a bit, making sure to collect some cyan/gold nodes (which grant AX-BITS).
-   - Intentionally end the run. The total AX-BITS balance is updated.
-   - Switch to Tab B and open the "Asset Claim" (Vault) modal.
-   - Verify that the "Total AX-BITS Balance" matches the new balance earned from the run in Tab A.
-
-This confirms that the native `BroadcastChannel` API is successfully syncing the `selectedSkinId` and `total_bits_balance` across tabs via the Zustand store.
-
-### Mobile Viewport & Touch Stabilization Verification
-1. Open the game in Chrome.
-2. Open Chrome DevTools (`F12` or `Ctrl+Shift+I`).
-3. Toggle Device Toolbar (`Ctrl+Shift+M`) to enter Device Mode.
-4. Select a mobile device like "iPhone 13" from the top dropdown.
-5. Verify that the UI takes up exactly `100dvh` (accounting for simulated address bars if using supported modes) and does not overflow.
-6. Try dragging the screen vertically - ensure that the page does not scroll natively (no pull-to-refresh).
-7. Rotate the device layout (portrait/landscape toggle button in the DevTools toolbar).
-8. Verify that the canvas correctly resizes itself after a slight delay, filling the parent container exactly without creating scrollbars.
+1. Ensure your browser has a Web3 wallet extension installed (e.g., MetaMask, Rabby).
+2. Start the local development server: `npm run dev`.
+3. Open the application in your browser and connect your wallet if prompted (or ensure it's connected).
+4. In your wallet extension, manually switch the active network to anything other than Arbitrum One (e.g., Ethereum Mainnet, Polygon, or a Testnet).
+5. Open the Claim Modal in the AXiM Cyber Runner HUD by clicking the Database icon on the top right.
+6. Verify the button at the bottom of the modal now says "Switch to Arbitrum Network" instead of "Mint to Arbitrum".
+7. Click the "Switch to Arbitrum Network" button. Your wallet should prompt you to switch the network back to Arbitrum One (Chain ID 42161).
+8. Once you approve the network switch in your wallet, verify the button state changes back to "Mint to Arbitrum" and is enabled for minting if you have a claimable balance.
