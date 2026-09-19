@@ -72,7 +72,7 @@ function App() {
 
   return (
     <ErrorBoundary>
-    <div className={`min-h-screen bg-neon-bg text-white flex flex-col relative overflow-hidden select-none ${crtEnabled ? 'crt-scanlines' : ''}`}>
+    <div className={`h-[100dvh] w-screen bg-neon-bg text-white flex flex-col relative overflow-hidden select-none ${crtEnabled ? 'crt-scanlines' : ''}`}>
       
       <div className="absolute inset-0 z-0 pointer-events-none opacity-20">
         <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_50%,#ff007f_0%,transparent_50%)] translate-y-[-50%]" />
