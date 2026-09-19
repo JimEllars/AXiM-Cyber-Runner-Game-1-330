@@ -124,8 +124,9 @@ const RunnerCanvas = () => {
 
     // Dynamic resizing
     const updateCanvasSizeRaw = () => {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+        if (!canvas.parentElement) return;
+        canvas.width = canvas.parentElement.clientWidth;
+        canvas.height = canvas.parentElement.clientHeight;
         if (worker) {
             worker.postMessage({ type: 'RESIZE', payload: { width: canvas.width, height: canvas.height } });
         }
@@ -138,6 +139,10 @@ const RunnerCanvas = () => {
     };
 
     window.addEventListener('resize', updateCanvasSize);
+    window.addEventListener('orientationchange', () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(updateCanvasSizeRaw, 100);
+    });
     updateCanvasSizeRaw();
 
     worker.onmessage = (e) => {
@@ -451,15 +456,18 @@ const RunnerCanvas = () => {
       canvas.removeEventListener('touchend', handleTouchEnd);
       canvas.removeEventListener('touchcancel', handleTouchEnd);
       window.removeEventListener('resize', updateCanvasSize);
+      window.removeEventListener('orientationchange', updateCanvasSizeRaw);
       audioEngine.stopBassline();
     };
   }, [gameState, getSelectedSkin, getSelectedTheme]);
 
   return (
-    <canvas 
-      ref={canvasRef} 
-      className="absolute top-0 left-0 w-full h-full block bg-neon-bg"
-    />
+    <div className="w-full h-full touch-none relative overflow-hidden">
+      <canvas
+        ref={canvasRef}
+        className="absolute top-0 left-0 block bg-neon-bg touch-none"
+      />
+    </div>
   );
 };
 

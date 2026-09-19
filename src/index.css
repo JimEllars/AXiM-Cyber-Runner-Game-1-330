@@ -9,8 +9,16 @@
     color: #fff;
     font-family: 'Courier New', Courier, monospace;
     overflow: hidden;
+    touch-action: none;
+    height: 100dvh;
+    width: 100vw;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+  #root {
+    height: 100dvh;
+    width: 100vw;
+    overflow: hidden;
   }
 }
 

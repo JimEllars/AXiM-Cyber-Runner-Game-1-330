@@ -81,3 +81,13 @@ To verify the `BroadcastChannel` synchronization works correctly, follow these s
    - Verify that the "Total AX-BITS Balance" matches the new balance earned from the run in Tab A.
 
 This confirms that the native `BroadcastChannel` API is successfully syncing the `selectedSkinId` and `total_bits_balance` across tabs via the Zustand store.
+
+### Mobile Viewport & Touch Stabilization Verification
+1. Open the game in Chrome.
+2. Open Chrome DevTools (`F12` or `Ctrl+Shift+I`).
+3. Toggle Device Toolbar (`Ctrl+Shift+M`) to enter Device Mode.
+4. Select a mobile device like "iPhone 13" from the top dropdown.
+5. Verify that the UI takes up exactly `100dvh` (accounting for simulated address bars if using supported modes) and does not overflow.
+6. Try dragging the screen vertically - ensure that the page does not scroll natively (no pull-to-refresh).
+7. Rotate the device layout (portrait/landscape toggle button in the DevTools toolbar).
+8. Verify that the canvas correctly resizes itself after a slight delay, filling the parent container exactly without creating scrollbars.
