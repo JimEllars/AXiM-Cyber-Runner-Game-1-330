@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useChainId, useSwitchChain } from 'wagmi';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 import { useCyberRunnerStore } from '../store/useCyberRunnerStore';
@@ -6,6 +7,9 @@ import { useCyberRunnerStore } from '../store/useCyberRunnerStore';
 const { FiX, FiDatabase, FiCpu, FiExternalLink } = FiIcons;
 
 const ClaimModal = ({ isOpen, onClose }) => {
+  const chainId = useChainId();
+  const { switchChain } = useSwitchChain();
+  const isWrongNetwork = chainId !== 42161;
   const { total_bits_balance, claimable_erc20_allowance, addToast } = useCyberRunnerStore();
   const [isMinting, setIsMinting] = useState(false);
 
@@ -54,27 +58,37 @@ const ClaimModal = ({ isOpen, onClose }) => {
           </div>
         </div>
 
-        <button
-          onClick={handleMint}
-          disabled={isMinting || claimable_erc20_allowance <= 0}
-          className={`w-full py-3 font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-2 transition-all rounded ${
-            isMinting
-              ? 'bg-gray-800 text-gray-500 cursor-wait'
-              : claimable_erc20_allowance <= 0
-              ? 'bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700'
-              : 'bg-neon-cyan text-black hover:brightness-125 hover:shadow-[0_0_20px_rgba(0,240,255,0.4)]'
-          }`}
-        >
-          {isMinting ? (
-            <>
-              <SafeIcon icon={FiIcons.FiLoader} className="animate-spin" /> Processing...
-            </>
-          ) : (
-            <>
-              <SafeIcon icon={FiExternalLink} /> Mint to Arbitrum
-            </>
-          )}
-        </button>
+
+        {isWrongNetwork ? (
+          <button
+            onClick={() => switchChain({ chainId: 42161 })}
+            className="w-full py-3 font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-2 transition-all rounded bg-red-500/20 text-red-500 border border-red-500 hover:bg-red-500 hover:text-black shadow-[0_0_20px_rgba(255,0,0,0.4)]"
+          >
+             Switch to Arbitrum Network
+          </button>
+        ) : (
+          <button
+            onClick={handleMint}
+            disabled={isMinting || claimable_erc20_allowance <= 0}
+            className={`w-full py-3 font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-2 transition-all rounded ${
+              isMinting
+                ? 'bg-gray-800 text-gray-500 cursor-wait'
+                : claimable_erc20_allowance <= 0
+                ? 'bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700'
+                : 'bg-neon-cyan text-black hover:brightness-125 hover:shadow-[0_0_20px_rgba(0,240,255,0.4)]'
+            }`}
+          >
+            {isMinting ? (
+              <>
+                <SafeIcon icon={FiIcons.FiLoader} className="animate-spin" /> Processing...
+              </>
+            ) : (
+              <>
+                <SafeIcon icon={FiExternalLink} /> Mint to Arbitrum
+              </>
+            )}
+          </button>
+        )}
       </div>
     </div>
   );

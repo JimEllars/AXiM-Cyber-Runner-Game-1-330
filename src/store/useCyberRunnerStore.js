@@ -387,11 +387,13 @@ if (typeof window !== 'undefined' && window.BroadcastChannel) {
       const currentState = useCyberRunnerStore.getState();
 
       const updates = {};
-      if (selectedSkinId !== undefined && selectedSkinId !== currentState.selectedSkinId) {
+
+      // Strict equality check to prevent loop
+      if (selectedSkinId !== undefined && String(selectedSkinId) !== String(currentState.selectedSkinId)) {
         updates.selectedSkinId = selectedSkinId;
       }
-      if (total_bits_balance !== undefined && total_bits_balance !== currentState.total_bits_balance) {
-        updates.total_bits_balance = total_bits_balance;
+      if (total_bits_balance !== undefined && Number(total_bits_balance) !== Number(currentState.total_bits_balance)) {
+        updates.total_bits_balance = Number(total_bits_balance);
       }
 
       if (Object.keys(updates).length > 0) {

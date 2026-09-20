@@ -3,10 +3,10 @@ import { useCyberRunnerStore } from '../store/useCyberRunnerStore';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 import { generateShareData, copyToClipboard, nativeShare } from '../utils/shareHelpers';
-import { requestFullscreen } from '../utils/fullscreen';
+import { requestFullscreen, exitFullscreen } from '../utils/fullscreen';
 import ClaimModal from './ClaimModal';
 
-const { FiShield, FiZap, FiPlay, FiRefreshCw, FiLoader, FiTwitter, FiSend, FiCopy, FiShare2, FiVolume2, FiVolumeX, FiDatabase } = FiIcons;
+const { FiShield, FiZap, FiPlay, FiRefreshCw, FiLoader, FiTwitter, FiSend, FiCopy, FiShare2, FiVolume2, FiVolumeX, FiDatabase, FiX } = FiIcons;
 
 const RunnerHUD = () => {
   const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
@@ -52,7 +52,22 @@ const RunnerHUD = () => {
           </div>
         </div>
       )}
+
+      {/* Global Exit Navigation */}
+      <button
+        onClick={() => {
+          exitFullscreen();
+          window.location.href = 'https://axim.us.com/games';
+        }}
+        className="absolute top-4 right-4 pointer-events-auto z-[100] mt-[env(safe-area-inset-top)] mr-[env(safe-area-inset-right)] p-2 rounded-full bg-black/60 border border-red-500/30 text-red-400 hover:bg-red-500 hover:text-black hover:shadow-[0_0_15px_rgba(255,0,0,0.5)] transition-all focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none"
+        title="Exit to AXiM Hub"
+        aria-label="Exit to AXiM Hub"
+      >
+        <SafeIcon icon={FiX} size={20} />
+      </button>
+
       {/* Top HUD */}
+
       <div className="flex justify-between items-start font-mono uppercase">
         <div className="flex flex-col gap-2">
           <a
