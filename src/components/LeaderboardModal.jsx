@@ -20,25 +20,30 @@ const LeaderboardModal = ({ isOpen, onClose }) => {
   const [leaders, setLeaders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [refreshDisabled, setRefreshDisabled] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const LIMIT = 25;
 
   const handleRefresh = () => {
     if (refreshDisabled || loading) return;
 
     setRefreshDisabled(true);
-    fetchLeaders();
+    setPage(1);
+    fetchLeaders(1);
 
     setTimeout(() => {
       setRefreshDisabled(false);
     }, 10000);
   };
 
-  const fetchLeaders = async () => {
+  const fetchLeaders = async (currentPage = page) => {
     setLoading(true);
     try {
-      const response = await fetch('api/v1/runner/leaderboard');
+      const response = await fetch(`api/v1/runner/leaderboard?page=${currentPage}&limit=${LIMIT}`);
       if (!response.ok) throw new Error('Failed to fetch from edge cache');
       const data = await response.json();
       setLeaders(data || []);
+      setHasMore(data.length === LIMIT);
     } catch (error) {
       console.error('Error fetching leaderboard:', error);
       // Mock data if Edge is not connected
@@ -47,6 +52,7 @@ const LeaderboardModal = ({ isOpen, onClose }) => {
         { id: 2, player_address: '0x9988...ef01', score: 12400, multiplier_applied: 1.3 },
         { id: 3, player_address: '0x5544...2233', score: 9800, multiplier_applied: 1.1 },
       ]);
+      setHasMore(false);
     } finally {
       setLoading(false);
     }
@@ -55,15 +61,15 @@ const LeaderboardModal = ({ isOpen, onClose }) => {
   useEffect(() => {
     let intervalId;
     if (isOpen) {
-      fetchLeaders();
+      fetchLeaders(page);
       intervalId = setInterval(() => {
-        fetchLeaders();
+        fetchLeaders(page);
       }, 60000);
     }
     return () => {
       if (intervalId) clearInterval(intervalId);
     };
-  }, [isOpen]);
+  }, [isOpen, page]);
 
   return (
     <div
@@ -147,6 +153,26 @@ const LeaderboardModal = ({ isOpen, onClose }) => {
           )}
         </div>
         
+        <div className="flex justify-between items-center mt-4">
+          <button
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1 || loading}
+            className="px-4 py-2 bg-white/5 border border-white/10 rounded text-gray-400 hover:text-neon-cyan hover:border-neon-cyan disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm uppercase tracking-widest font-bold"
+          >
+            Previous
+          </button>
+          <span className="text-neon-magenta text-sm font-bold">
+            Page {page}
+          </span>
+          <button
+            onClick={() => setPage(p => p + 1)}
+            disabled={!hasMore || loading}
+            className="px-4 py-2 bg-white/5 border border-white/10 rounded text-gray-400 hover:text-neon-cyan hover:border-neon-cyan disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm uppercase tracking-widest font-bold"
+          >
+            Next
+          </button>
+        </div>
+
         <div className="mt-6 pt-4 border-t border-white/10 text-center">
           <p className="text-[10px] text-gray-500 uppercase tracking-[0.2em]">
             Weekly rewards distributed every Sunday 00:00 UTC

@@ -133,5 +133,28 @@ export const runnerApi = {
       console.error('Achievement Sync Error:', error);
       throw error;
     }
+  },
+
+  /**
+   * Submits telemetry data to the Edge Bridge
+   */
+  async submitTelemetry(payload) {
+    try {
+      // Use fire-and-forget approach for telemetry
+      fetch('/api/v1/telemetry', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      }).catch(err => {
+        // Silently swallow fetch errors for telemetry to not interrupt user
+        console.debug('Telemetry submission failed', err);
+      });
+      return true;
+    } catch (error) {
+      console.debug('Telemetry error', error);
+      return false;
+    }
   }
 };

@@ -37,3 +37,34 @@ To simulate a wrong-network state and verify the Claim Modal guard, follow these
 5. The "Deploy Shield" button should become active. Click it to deploy a shield (costs 50 bits), and observe the balance deduct. The button will then be disabled since the shield is active.
 6. Accumulate up to 100 bits. The "2x Multiplier" button will become active. Click it to double your multiplier.
 7. Verify that your state accurately reflects the new status, and the visual feedback responds accordingly.
+
+### Testing KV Pagination Locally
+
+To verify the new Leaderboard Pagination and KV caching locally:
+
+1. Navigate to the \`edge-bridge\` directory:
+   \`\`\`bash
+   cd edge-bridge
+   \`\`\`
+
+2. Start the local Wrangler dev server (ensure you have Wrangler installed and authenticated):
+   \`\`\`bash
+   npx wrangler dev
+   \`\`\`
+
+3. In another terminal, make a request to the edge function to fetch the first page of the leaderboard:
+   \`\`\`bash
+   curl "http://127.0.0.1:8787/api/v1/game/leaderboard?page=1&limit=25"
+   \`\`\`
+
+4. You can interact with the local KV store to verify that the cache key \`leaderboard:global:page:1\` was created:
+   \`\`\`bash
+   npx wrangler kv:key get "leaderboard:global:page:1" --binding=LEADERBOARD_KV --local
+   \`\`\`
+   This should return the cached JSON string for page 1 of the leaderboard.
+
+5. Test fetching a different page and check the KV cache again:
+   \`\`\`bash
+   curl "http://127.0.0.1:8787/api/v1/game/leaderboard?page=2&limit=25"
+   npx wrangler kv:key get "leaderboard:global:page:2" --binding=LEADERBOARD_KV --local
+   \`\`\`
