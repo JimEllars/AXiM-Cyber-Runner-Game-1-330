@@ -68,3 +68,26 @@ To verify the new Leaderboard Pagination and KV caching locally:
    curl "http://127.0.0.1:8787/api/v1/game/leaderboard?page=2&limit=25"
    npx wrangler kv:key get "leaderboard:global:page:2" --binding=LEADERBOARD_KV --local
    \`\`\`
+
+### Testing Telemetry Error Routing
+
+To intentionally trigger an error and verify the telemetry routing:
+1. Open the application locally using \`npm run dev\`.
+2. In the Chrome/Firefox Developer Tools console, execute the following to manually throw an error inside a React component context (this forces an unhandled exception that the ErrorBoundary will catch):
+   \`\`\`javascript
+   // Assuming you are in the browser console:
+   const triggerCrash = () => {
+       const el = document.getElementById('root');
+       if(el) {
+           // Break the react render tree artificially
+           throw new Error("Intended telemetry test crash");
+       }
+   };
+   triggerCrash();
+   \`\`\`
+   *(Alternatively, modify a child component like \`HUD.jsx\` to conditionally throw \`new Error('Test Crash')\` upon a specific key press or button click).*
+3. Observe the UI transition to the "System Glitch - Rebooting..." ErrorBoundary fallback screen.
+4. Open the Network tab in your browser's Developer Tools.
+5. Check for a \`POST\` request to \`/api/v1/telemetry\`.
+6. Inspect the payload of this request; it should contain \`{ "type": "react_crash", "payload": { "error": "Error: Intended telemetry test crash", ... } }\`.
+7. The request should gracefully complete (or fail silently without crashing the browser/tab if the backend is down) due to the \`try/catch\` wrapper in the \`logTelemetryEvent\` function.

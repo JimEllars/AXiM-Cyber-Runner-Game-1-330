@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { useChainId, useSwitchChain } from 'wagmi';
+import { useChainId, useSwitchChain, useWriteContract, useAccount } from 'wagmi';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 import { useCyberRunnerStore } from '../store/useCyberRunnerStore';
+import { runnerApi } from '../services/api';
 
 const { FiX, FiDatabase, FiCpu, FiExternalLink } = FiIcons;
 
@@ -12,14 +13,66 @@ const ClaimModal = ({ isOpen, onClose }) => {
   const isWrongNetwork = chainId !== 42161;
   const { total_bits_balance, claimable_erc20_allowance, addToast } = useCyberRunnerStore();
   const [isMinting, setIsMinting] = useState(false);
+  const [signatureLoading, setSignatureLoading] = useState(false);
 
-  const handleMint = () => {
-    setIsMinting(true);
-    setTimeout(() => {
+  const { address } = useAccount();
+  const { writeContract } = useWriteContract();
+  const AXIM_TOKEN_CONTRACT_ADDRESS = '0x0000000000000000000000000000000000000000';
+
+  const handleMint = async () => {
+    if (!address) {
+      addToast('ERROR', 'Wallet not connected', 'error');
+      return;
+    }
+
+    try {
+      setIsMinting(true);
+      setSignatureLoading(true);
+
+      // Step 1: Call stubbed api
+      const signature = await runnerApi.getClaimSignature(claimable_erc20_allowance, address);
+      setSignatureLoading(false);
+
+      // Step 2: Stub Wagmi useWriteContract hook call
+      // MOCK ABI for stubbing
+      const mockAbi = [
+        {
+          name: 'claimTokens',
+          type: 'function',
+          stateMutability: 'nonpayable',
+          inputs: [
+            { name: 'amount', type: 'uint256' },
+            { name: 'signature', type: 'bytes' }
+          ],
+          outputs: []
+        }
+      ];
+
+      writeContract({
+        address: AXIM_TOKEN_CONTRACT_ADDRESS,
+        abi: mockAbi,
+        functionName: 'claimTokens',
+        args: [claimable_erc20_allowance, signature],
+      }, {
+        onSuccess: () => {
+          setIsMinting(false);
+          addToast('MINTING QUEUED', 'Minting queued on Arbitrum Testnet', 'achievement');
+          onClose();
+        },
+        onError: (err) => {
+          setIsMinting(false);
+          console.error("Minting Error", err);
+          // Don't close or show error toast aggressively for now as this is a stub
+          addToast('MINTING ERROR', 'Check console for details', 'error');
+        }
+      });
+
+    } catch (error) {
+      setSignatureLoading(false);
       setIsMinting(false);
-      addToast('MINTING QUEUED', 'Minting queued on Arbitrum Testnet', 'achievement');
-      onClose();
-    }, 1500);
+      console.error(error);
+      addToast('SIGNATURE ERROR', 'Failed to get claim signature', 'error');
+    }
   };
 
   return (
@@ -80,7 +133,7 @@ const ClaimModal = ({ isOpen, onClose }) => {
           >
             {isMinting ? (
               <>
-                <SafeIcon icon={FiIcons.FiLoader} className="animate-spin" /> Processing...
+                <SafeIcon icon={FiIcons.FiLoader} className="animate-spin" /> {signatureLoading ? 'Awaiting Signature...' : 'Processing...'}
               </>
             ) : (
               <>
