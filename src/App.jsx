@@ -66,6 +66,39 @@ function App() {
   }, []);
 
   useEffect(() => {
+    const syncPendingScores = async () => {
+      const pendingScores = JSON.parse(localStorage.getItem('axim_pending_scores') || '[]');
+      if (pendingScores.length === 0) return;
+
+      console.log(`Syncing ${pendingScores.length} pending scores...`);
+      const remainingScores = [];
+
+      for (const payload of pendingScores) {
+        try {
+          await runnerApi.submitRun(payload);
+          console.log('Successfully synced a pending score');
+        } catch (err) {
+          console.error('Failed to sync pending score, keeping in queue', err);
+          remainingScores.push(payload);
+        }
+      }
+
+      localStorage.setItem('axim_pending_scores', JSON.stringify(remainingScores));
+    };
+
+    window.addEventListener('online', syncPendingScores);
+
+    // Also try to sync on initial load if online
+    if (navigator.onLine) {
+      syncPendingScores();
+    }
+
+    return () => {
+      window.removeEventListener('online', syncPendingScores);
+    };
+  }, []);
+
+  useEffect(() => {
     const anyModalOpen = showGate || showLeaderboard || showSkins || showChallenges || showThemes;
     setIsPaused(anyModalOpen);
   }, [showGate, showLeaderboard, showSkins, showChallenges, showThemes, setIsPaused]);
