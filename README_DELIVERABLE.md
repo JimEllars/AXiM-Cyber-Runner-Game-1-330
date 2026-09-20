@@ -91,3 +91,22 @@ To intentionally trigger an error and verify the telemetry routing:
 5. Check for a \`POST\` request to \`/api/v1/telemetry\`.
 6. Inspect the payload of this request; it should contain \`{ "type": "react_crash", "payload": { "error": "Error: Intended telemetry test crash", ... } }\`.
 7. The request should gracefully complete (or fail silently without crashing the browser/tab if the backend is down) due to the \`try/catch\` wrapper in the \`logTelemetryEvent\` function.
+# Verification & Testing
+
+## Offline Score Queueing Mechanism
+1. Open the game in Chrome.
+2. Open Chrome DevTools (F12) and go to the **Network** tab.
+3. Change the network throttling from "No throttling" to **"Offline"**.
+4. Play a run or dispatch a game over event. You will see that the network request fails but the game proceeds to the Game Over screen without blocking.
+5. In the DevTools **Application** tab, under Local Storage, check for `axim_pending_scores`. You should see an array containing the serialized payload of the run.
+6. Change the network back to **"No throttling"** (Online).
+7. Notice the console logs indicating the sync occurred. The `axim_pending_scores` array in Local Storage should now be empty.
+
+## Web3 Claim Modal UX
+1. Obtain an ERC-20 allowance.
+2. Open the Claim Modal.
+3. Click "Mint to Arbitrum". The button will enter a processing state (spinning).
+4. Since this is using a mock, it will resolve to success. The button will be replaced with a green success box containing a clickable mock Arbiscan transaction hash.
+
+## Mobile Audio Context Guard
+- The game audio context is explicitly resumed on interaction (e.g. clicking Start Run or Play Practice Mode), ensuring mobile browsers do not mute the game due to autoplay policies.

@@ -5,6 +5,7 @@ import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 import { useCyberRunnerStore } from '../store/useCyberRunnerStore';
 import { requestFullscreen } from '../utils/fullscreen';
+import { audioEngine } from '../utils/SynthAudioEngine';
 import { runnerApi } from '../services/api';
 
 const { FiUnlock, FiX } = FiIcons;
@@ -166,7 +167,7 @@ const TokenGateModal = ({ isOpen, onClose }) => {
           </button>
           
           <button 
-            onClick={() => { requestFullscreen(); startPracticeMode(); onClose(); }}
+            onClick={() => { audioEngine.resumeAudioContext(); requestFullscreen(); startPracticeMode(); onClose(); }}
             disabled={isProcessing}
             className="w-full py-3 border border-gray-600 text-gray-400 hover:bg-gray-800 transition-all text-sm disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
           >

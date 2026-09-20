@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useCyberRunnerStore } from '../store/useCyberRunnerStore';
+import { audioEngine } from '../utils/SynthAudioEngine';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 import { generateShareData, copyToClipboard, nativeShare } from '../utils/shareHelpers';
@@ -133,7 +134,7 @@ const RunnerHUD = () => {
         {gameState === 'IDLE' && (
           <div className="flex flex-col items-center gap-6">
             <button 
-              onClick={() => { requestFullscreen(); if (gameState === 'IDLE' && !ticketStatus.freeRunAvailable) { window.dispatchEvent(new Event('OPEN_TOKEN_GATE')); } else { isPracticeMode ? startPracticeMode() : startGame(); } }}
+              onClick={() => { audioEngine.resumeAudioContext(); requestFullscreen(); if (gameState === 'IDLE' && !ticketStatus.freeRunAvailable) { window.dispatchEvent(new Event('OPEN_TOKEN_GATE')); } else { isPracticeMode ? startPracticeMode() : startGame(); } }}
               className="group relative px-10 py-5 bg-neon-bg border-2 border-neon-cyan text-neon-cyan text-2xl font-bold uppercase tracking-[0.3em] hover:bg-neon-cyan hover:text-black transition-all shadow-[0_0_20px_rgba(0,240,255,0.4)] overflow-hidden focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
             >
               <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />

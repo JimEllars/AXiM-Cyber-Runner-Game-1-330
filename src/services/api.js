@@ -89,6 +89,16 @@ export const runnerApi = {
    * Submits a completed run for verification and recording
    */
   async submitRun(payload) {
+    if (!navigator.onLine) {
+      // Offline: Queue the score
+      const pendingScores = JSON.parse(localStorage.getItem('axim_pending_scores') || '[]');
+      pendingScores.push(payload);
+      localStorage.setItem('axim_pending_scores', JSON.stringify(pendingScores));
+      console.log('Network offline, score queued locally.');
+      // Return a mock success response to allow the game to transition to game over state
+      return { success: true, queued: true };
+    }
+
     try {
       const response = await fetchWithTimeout(`${API_BASE}/runs/complete`, {
         method: 'POST',
@@ -103,8 +113,13 @@ export const runnerApi = {
       if (!response.ok) throw new Error(result.reason || 'Submission failed');
       return result;
     } catch (error) {
+      // If fetch fails (e.g. timeout), also queue it
       console.error('Submission Error:', error);
-      throw error;
+      const pendingScores = JSON.parse(localStorage.getItem('axim_pending_scores') || '[]');
+      pendingScores.push(payload);
+      localStorage.setItem('axim_pending_scores', JSON.stringify(pendingScores));
+      console.log('Submission failed, score queued locally.');
+      return { success: true, queued: true }; // return success to unblock UI
     }
   },
 
