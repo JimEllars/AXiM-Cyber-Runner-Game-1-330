@@ -28,3 +28,12 @@ To simulate a wrong-network state and verify the Claim Modal guard, follow these
 6. Verify the button at the bottom of the modal now says "Switch to Arbitrum Network" instead of "Mint to Arbitrum".
 7. Click the "Switch to Arbitrum Network" button. Your wallet should prompt you to switch the network back to Arbitrum One (Chain ID 42161).
 8. Once you approve the network switch in your wallet, verify the button state changes back to "Mint to Arbitrum" and is enabled for minting if you have a claimable balance.
+
+### Testing the In-Run Power-Up Economy
+1. Start the game by clicking "Start Run".
+2. While running (during `PLAYING` state), check the new "Deploy Shield" and "2x Multiplier" buttons on the left side of the screen.
+3. If you have fewer than 50 bits, both buttons will be disabled.
+4. Collect gold/cyan nodes during the run until your `total_bits_balance` reaches 50 bits (or start with an existing balance).
+5. The "Deploy Shield" button should become active. Click it to deploy a shield (costs 50 bits), and observe the balance deduct. The button will then be disabled since the shield is active.
+6. Accumulate up to 100 bits. The "2x Multiplier" button will become active. Click it to double your multiplier.
+7. Verify that your state accurately reflects the new status, and the visual feedback responds accordingly.

@@ -113,7 +113,7 @@ const LeaderboardModal = ({ isOpen, onClose }) => {
             ))
           ) : leaders.length > 0 ? leaders.map((entry, idx) => (
 
-            <div key={entry.id || idx} className="flex items-center justify-between p-3 bg-white/5 rounded border border-white/10 hover:border-neon-cyan/50 transition-all group">
+            <div key={entry.id || idx} className={`flex items-center justify-between p-3 rounded border transition-all group ${entry.player_address === playerAddress ? 'bg-cyan-900/50 border-neon-cyan shadow-[0_0_10px_rgba(0,240,255,0.3)]' : 'bg-white/5 border-white/10 hover:border-neon-cyan/50'}`}>
               <div className="flex items-center gap-4">
                 <span className={`font-bold text-lg ${idx === 0 ? 'text-neon-gold' : 'text-gray-500'}`}>
                   {idx + 1}

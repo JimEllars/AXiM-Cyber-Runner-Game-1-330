@@ -208,6 +208,31 @@ export const useCyberRunnerStore = create(
           if (newlyUnlockedChallenges && newlyUnlockedChallenges.length > 0) {
             runnerApi.syncAchievements({ playerAddress, unlockedIds: newlyUnlockedChallenges }).catch(e => console.error("Sync error", e));
           }
+
+          // 2. SIWE Session Verification Guard
+          try {
+            await runnerApi.checkSession();
+          } catch (sessionError) {
+            console.warn("SIWE session expired, caching run data");
+            const runData = {
+              turnstileToken: window.__TURNSTILE_TOKEN__ || '',
+              playerAddress,
+              score: Math.floor(score * get().streakMultiplier),
+              distance: Math.floor(distance),
+              powerNodes,
+              bits_collected: session_bits,
+              multiplier,
+              elapsedTimeSec,
+              runHash
+            };
+            sessionStorage.setItem('pendingRunData', JSON.stringify(runData));
+            get().addToast('SESSION EXPIRED', 'Re-sign required to submit score', 'error');
+            // Trigger UI prompt or external event
+            window.dispatchEvent(new Event('OPEN_TOKEN_GATE')); // or equivalent logic to re-sign
+            set({ gameState: 'GAMEOVER' });
+            return;
+          }
+
           await runnerApi.submitRun({
             turnstileToken: window.__TURNSTILE_TOKEN__ || '',
             playerAddress,
@@ -255,6 +280,25 @@ export const useCyberRunnerStore = create(
         }
       },
 
+
+      purchasePowerUp: (type, cost) => set((state) => {
+        if (state.total_bits_balance >= cost) {
+          if (type === 'shield' && !state.hasShield) {
+            get().addToast('SYSTEM UPDATE', 'Shield Module Online');
+            return {
+              total_bits_balance: state.total_bits_balance - cost,
+              hasShield: true
+            };
+          } else if (type === 'multiplier') {
+            get().addToast('SYSTEM UPDATE', '2x Multiplier Active');
+            return {
+              total_bits_balance: state.total_bits_balance - cost,
+              multiplier: state.multiplier * 2
+            };
+          }
+        }
+        return {};
+      }),
       getProgressValue: (type, progress) => {
         switch (type) {
           case 'cumulative_distance': return progress.cumulative_distance;

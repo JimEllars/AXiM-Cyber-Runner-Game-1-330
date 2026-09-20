@@ -13,7 +13,7 @@ const RunnerHUD = () => {
   const { 
     gameState, score, distance, multiplier, streakMultiplier, challengeProgress, hasShield,
     crtEnabled, toggleCrt, isMuted, toggleMute, startGame, startPracticeMode, ticketStatus, addToast,
-    hasSeenTutorial, setHasSeenTutorial, isPracticeMode, playerAddress, session_bits
+    hasSeenTutorial, setHasSeenTutorial, isPracticeMode, playerAddress, session_bits, purchasePowerUp, total_bits_balance
   } = useCyberRunnerStore();
 
   React.useEffect(() => {
@@ -232,6 +232,42 @@ const RunnerHUD = () => {
           </div>
         )}
       </div>
+
+
+      {/* Power-Up HUD */}
+      {gameState === 'PLAYING' && (
+        <div className="absolute top-1/2 left-4 -translate-y-1/2 flex flex-col gap-4 pointer-events-auto z-[100]">
+          <button
+            onClick={() => purchasePowerUp('shield', 50)}
+            disabled={total_bits_balance < 50 || hasShield}
+            className={`p-3 rounded-full border-2 transition-all shadow-[0_0_15px_rgba(0,0,0,0.5)] ${
+              total_bits_balance >= 50 && !hasShield
+                ? 'bg-blue-900/60 border-blue-400 text-blue-400 hover:bg-blue-500 hover:text-black hover:shadow-[0_0_20px_rgba(0,100,255,0.8)]'
+                : 'bg-gray-900/60 border-gray-600 text-gray-500 cursor-not-allowed'
+            }`}
+            title="Deploy Shield (50 Bits)"
+            aria-label="Deploy Shield"
+          >
+            <SafeIcon icon={FiShield} size={24} />
+            <div className="text-[10px] font-bold mt-1 tracking-tighter">50 BITS</div>
+          </button>
+
+          <button
+            onClick={() => purchasePowerUp('multiplier', 100)}
+            disabled={total_bits_balance < 100}
+            className={`p-3 rounded-full border-2 transition-all shadow-[0_0_15px_rgba(0,0,0,0.5)] ${
+              total_bits_balance >= 100
+                ? 'bg-neon-gold/20 border-neon-gold text-neon-gold hover:bg-neon-gold hover:text-black hover:shadow-[0_0_20px_rgba(255,183,0,0.8)]'
+                : 'bg-gray-900/60 border-gray-600 text-gray-500 cursor-not-allowed'
+            }`}
+            title="2x Multiplier (100 Bits)"
+            aria-label="2x Multiplier"
+          >
+            <SafeIcon icon={FiZap} size={24} />
+            <div className="text-[10px] font-bold mt-1 tracking-tighter">100 BITS</div>
+          </button>
+        </div>
+      )}
 
       {/* Bottom Controls Help */}
       {/* Tutorial Overlay */}
