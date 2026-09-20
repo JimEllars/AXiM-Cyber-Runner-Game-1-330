@@ -295,7 +295,19 @@ export default {
 
     // 3. Leaderboard Edge Cache (KV)
     if (request.method === "GET" && url.pathname === "/api/v1/game/leaderboard") {
-      const cached = await env.LEADERBOARD_KV.get("global_top_100");
+      const pageStr = url.searchParams.get("page") || "1";
+      const limitStr = url.searchParams.get("limit") || "25";
+
+      let page = parseInt(pageStr, 10);
+      let limit = parseInt(limitStr, 10);
+
+      if (isNaN(page) || page < 1) page = 1;
+      if (isNaN(limit) || limit < 1 || limit > 100) limit = 25;
+
+      const offset = (page - 1) * limit;
+      const cacheKey = `leaderboard:global:page:${page}`;
+
+      const cached = await env.LEADERBOARD_KV.get(cacheKey);
       if (cached) {
         return new Response(cached, {
           status: 200,
@@ -307,7 +319,7 @@ export default {
         });
       }
 
-      const dbRes = await fetch(`${env.SUPABASE_URL}/rest/v1/cyber_runner_runs?status=eq.completed&order=score.desc&limit=100`, {
+      const dbRes = await fetch(`${env.SUPABASE_URL}/rest/v1/cyber_runner_runs?status=eq.completed&order=score.desc&limit=${limit}&offset=${offset}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -323,7 +335,7 @@ export default {
       const data = await dbRes.json();
       const responseText = JSON.stringify(data);
 
-      ctx.waitUntil(env.LEADERBOARD_KV.put("global_top_100", responseText, { expirationTtl: 60 }));
+      ctx.waitUntil(env.LEADERBOARD_KV.put(cacheKey, responseText, { expirationTtl: 60 }));
 
       return new Response(responseText, {
         status: 200,
@@ -335,8 +347,33 @@ export default {
       });
     }
 
+    // 4. Telemetry Routing
+    if (request.method === "POST" && url.pathname === "/api/v1/telemetry") {
+      try {
+        const payload = await request.json() as any;
 
-    // 4. Achievement Sync
+        ctx.waitUntil(
+          fetch(`${env.SUPABASE_URL}/rest/v1/telemetry_logs`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${env.SUPABASE_SERVICE_KEY}`,
+              "apikey": env.SUPABASE_SERVICE_KEY,
+            },
+            body: JSON.stringify([payload])
+          }).catch(err => console.error(JSON.stringify({ level: "error", type: "cyber_runner_telemetry", data: { message: "telemetry_logs error", error: err instanceof Error ? err.message : err } })))
+        );
+
+        return new Response(JSON.stringify({ success: true }), {
+          status: 200,
+          headers: { ...CORS_HEADERS, "Content-Type": "application/json" }
+        });
+      } catch (err: any) {
+        return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: CORS_HEADERS });
+      }
+    }
+
+    // 5. Achievement Sync
     if (request.method === "POST" && url.pathname === "/api/v1/game/sync-achievements") {
       if (!checkRateLimit(ip)) {
         return new Response(JSON.stringify({ success: true, status: "rate_limited" }), {

@@ -171,14 +171,14 @@ const RunnerHUD = () => {
 
             {/* SSO / Guest Banner */}
             {isPracticeMode && session_bits > 0 && (
-              <div className="mb-4 bg-blue-900/40 border border-blue-500/50 p-3 rounded-lg text-left shadow-[0_0_15px_rgba(0,100,255,0.2)]">
-                <div className="text-blue-300 text-xs font-bold mb-1 uppercase tracking-wider">Guest Mode Detected</div>
-                <p className="text-gray-300 text-[10px] leading-tight mb-2">
-                  You earned <span className="text-neon-gold font-bold">{session_bits} AX-BITS</span>! Sign in with AXiM Passport to bank your tokens and claim limited skins.
+              <div className="mb-4 bg-blue-900/40 border border-blue-500/50 p-4 rounded-lg text-left shadow-[0_0_15px_rgba(0,100,255,0.3)] transform transition-transform hover:scale-105">
+                <div className="text-neon-cyan text-sm font-black mb-1 uppercase tracking-widest animate-pulse">Guest Mode Detected</div>
+                <p className="text-gray-200 text-xs leading-snug mb-3">
+                  You earned <span className="text-neon-gold font-bold">{session_bits} AX-BITS</span>! Connect AXiM Passport to save your balance and unlock limited skins.
                 </p>
                 <a
                   href={`https://passport.axim.us.com/login?redirect=${encodeURIComponent(window.location.href)}`}
-                  className="inline-block w-full py-1.5 bg-blue-500 hover:bg-blue-400 text-black text-center text-[10px] uppercase font-bold tracking-widest rounded transition-colors"
+                  className="inline-block w-full py-2 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-black text-center text-xs uppercase font-bold tracking-[0.2em] rounded-sm transition-all shadow-[0_0_10px_rgba(0,240,255,0.5)] border border-neon-cyan/50"
                 >
                   Connect Passport
                 </a>
