@@ -19,11 +19,10 @@ class ErrorBoundary extends React.Component {
     console.error("Caught in ErrorBoundary:", error, errorInfo);
 
     // Import api lazily to avoid circular dependencies if any, or just import at top
-    import('../services/api').then(({ runnerApi }) => {
-      runnerApi.submitTelemetry({
-        type: 'error_boundary',
-        error: error.toString(),
-        componentStack: errorInfo.componentStack,
+    import('../services/api').then(({ logTelemetryEvent }) => {
+      logTelemetryEvent('react_crash', {
+        error: error.message || error.toString(),
+        stack: errorInfo.componentStack,
         url: window.location.href,
         userAgent: navigator.userAgent
       });

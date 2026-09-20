@@ -40,8 +40,6 @@ export const runnerApi = {
    */
   async validateToken(token) {
     try {
-      // In a real scenario, this would call AXiM Core session endpoints
-      // Mocking success for demo purposes, but pointing to expected route
       const response = await fetchWithTimeout(`/api/v1/auth/validate-token`, {
         method: 'POST',
         headers: {
@@ -57,9 +55,7 @@ export const runnerApi = {
       throw error;
     }
   },
-  /**
-   * Checks if the user has a free run available for today
-   */
+
   /**
    * Fetches the user's current streak multiplier
    */
@@ -71,7 +67,7 @@ export const runnerApi = {
       return data.multiplier || 1.0;
     } catch (error) {
       console.error('API Error (Streak):', error);
-      return 1.5; // Mock fallback value as per request to have something visible
+      return 1.5;
     }
   },
 
@@ -85,7 +81,7 @@ export const runnerApi = {
       return await response.json();
     } catch (error) {
       console.error('API Error:', error);
-      return { freeRunAvailable: true }; // Fallback for dev/local
+      return { freeRunAvailable: true };
     }
   },
 
@@ -140,7 +136,6 @@ export const runnerApi = {
    */
   async submitTelemetry(payload) {
     try {
-      // Use fire-and-forget approach for telemetry
       fetch('/api/v1/telemetry', {
         method: 'POST',
         headers: {
@@ -148,7 +143,6 @@ export const runnerApi = {
         },
         body: JSON.stringify(payload)
       }).catch(err => {
-        // Silently swallow fetch errors for telemetry to not interrupt user
         console.debug('Telemetry submission failed', err);
       });
       return true;
@@ -156,5 +150,39 @@ export const runnerApi = {
       console.debug('Telemetry error', error);
       return false;
     }
+  },
+
+  /**
+   * Stubs fetching a claim signature for Web3 minting
+   */
+  async getClaimSignature(amount, walletAddress) {
+    try {
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 800));
+      // Return a mock signature
+      return "0xmocksignaturedeadbeef1234567890abcdef";
+    } catch (error) {
+      console.error('Claim Signature Error:', error);
+      throw error;
+    }
+  }
+};
+
+/**
+ * Submits general telemetry event to the Edge Bridge
+ */
+export const logTelemetryEvent = (type, payload) => {
+  try {
+    fetch('/api/v1/telemetry', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ type, payload })
+    }).catch(err => {
+      console.debug('Telemetry submission failed', err);
+    });
+  } catch (error) {
+    console.debug('Telemetry error', error);
   }
 };

@@ -1,10 +1,32 @@
 import React, { useEffect, useRef } from 'react';
+import { logTelemetryEvent } from '../services/api';
 import { useCyberRunnerStore } from '../store/useCyberRunnerStore';
 import { audioEngine } from '../utils/SynthAudioEngine';
 
 const RunnerCanvas = () => {
 
   const canvasRef = useRef(null);
+  const frameCountRef = useRef(0);
+  const startTimeRef = useRef(0);
+  const runReportedRef = useRef(false);
+
+  useEffect(() => {
+    if (gameState === 'PLAYING') {
+      frameCountRef.current = 0;
+      startTimeRef.current = performance.now();
+      runReportedRef.current = false;
+    } else if (gameState === 'GAMEOVER' && !runReportedRef.current && startTimeRef.current > 0) {
+      const duration = (performance.now() - startTimeRef.current) / 1000;
+      if (duration > 0) {
+        const average_fps = Math.round(frameCountRef.current / duration);
+        logTelemetryEvent('run_performance', {
+          average_fps,
+          device_width: window.innerWidth
+        });
+      }
+      runReportedRef.current = true;
+    }
+  }, [gameState]);
   const [workerError, setWorkerError] = React.useState(null);
   if (workerError) throw workerError;
 
@@ -238,6 +260,7 @@ const RunnerCanvas = () => {
 
     const render = () => {
       if (gameState !== 'PLAYING') return;
+      frameCountRef.current++;
       const now = Date.now();
 
       fpsFrames++;
