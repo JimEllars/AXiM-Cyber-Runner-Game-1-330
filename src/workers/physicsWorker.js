@@ -20,12 +20,14 @@ self.onmessage = function(e) {
   const data = e.data;
 
   if (data.type === 'INIT' || data.type === 'RESET') {
+
       if (data.payload) {
           currentWidth = data.payload.width;
           currentHeight = data.payload.height;
-          // Scale spawn distance for portrait mode to give player enough reaction time
-          spawnDistance = currentHeight > currentWidth ? (currentWidth / (currentWidth / 800)) * 1.5 : currentWidth;
-          if (currentHeight > currentWidth) {
+          // Support new payload format where possible
+          let isPortrait = data.payload.isPortrait !== undefined ? data.payload.isPortrait : currentHeight > currentWidth;
+
+          if (isPortrait) {
               spawnDistance = 1200; // Force higher spawn distance if in portrait for consistent feel
           } else {
               spawnDistance = 800;
@@ -63,10 +65,13 @@ self.onmessage = function(e) {
       player.h = 50;
       player.y = 250;
   }
+
   else if (data.type === 'RESIZE') {
       currentWidth = data.payload.width;
       currentHeight = data.payload.height;
-      if (currentHeight > currentWidth) {
+      let isPortrait = data.payload.isPortrait !== undefined ? data.payload.isPortrait : currentHeight > currentWidth;
+
+      if (isPortrait) {
           spawnDistance = 1200; // Increased spawn distance in portrait
       } else {
           spawnDistance = 800; // Standard distance
