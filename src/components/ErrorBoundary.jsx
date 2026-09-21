@@ -1,3 +1,4 @@
+import { logTelemetryEvent } from '../services/api';
 import React from 'react';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
@@ -18,16 +19,13 @@ class ErrorBoundary extends React.Component {
   componentDidCatch(error, errorInfo) {
     console.error("Caught in ErrorBoundary:", error, errorInfo);
 
-    // Import api lazily to avoid circular dependencies if any, or just import at top
-    import('../services/api').then(({ logTelemetryEvent }) => {
-      logTelemetryEvent('react_crash', {
+    // Direct import to fix vite static+dynamic import issue
+    logTelemetryEvent('react_crash', {
         error: error.message || error.toString(),
+        componentStack: errorInfo.componentStack,
         stack: errorInfo.componentStack,
         url: window.location.href,
         userAgent: navigator.userAgent
-      });
-    }).catch(err => {
-      console.debug('Failed to load api for telemetry', err);
     });
   }
 

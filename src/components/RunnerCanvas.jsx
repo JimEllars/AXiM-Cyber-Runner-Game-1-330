@@ -98,7 +98,8 @@ const RunnerCanvas = () => {
           audioEngine.ctx.suspend();
         }
       } else {
-        if (audioEngine.ctx) {
+        const { isMuted } = useCyberRunnerStore.getState();
+        if (audioEngine.ctx && !isMuted) {
           audioEngine.ctx.resume();
         }
       }
@@ -333,6 +334,14 @@ const RunnerCanvas = () => {
         } else if (fps >= 35) {
             lowFpsTime = 0;
         }
+      }
+
+      const isCurrentlyPaused = useCyberRunnerStore.getState().isPaused;
+
+      if (isCurrentlyPaused) {
+        lastTime = now;
+        animationFrameId = requestAnimationFrame(render);
+        return;
       }
 
       const dt = Math.min((now - lastTime) / 1000, 0.1);

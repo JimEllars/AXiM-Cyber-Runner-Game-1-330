@@ -19,7 +19,11 @@ class SynthAudioEngine {
     gain.connect(this.ctx.destination);
     gain.gain.setValueAtTime(0.001, this.ctx.currentTime); // Almost muted
     osc.start();
-    osc.stop(this.ctx.currentTime + 0.01);
+    try {
+      osc.stop(this.ctx.currentTime + 0.01);
+    } catch (e) {
+      // Ignore InvalidStateError
+    }
   }
 
 
@@ -59,7 +63,11 @@ class SynthAudioEngine {
     gain.connect(this.ctx.destination);
     
     osc.start();
-    osc.stop(this.ctx.currentTime + duration);
+    try {
+      osc.stop(this.ctx.currentTime + duration);
+    } catch (e) {
+      // Ignore InvalidStateError
+    }
 
     setTimeout(() => {
       this.activeSounds = Math.max(0, this.activeSounds - 1);
@@ -128,3 +136,15 @@ SynthAudioEngine.prototype.resume = function() {
     this.ctx.resume();
   }
 };
+
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') {
+    audioEngine.suspend();
+  } else {
+    const { isMuted } = useCyberRunnerStore.getState();
+    if (!isMuted) {
+      audioEngine.resume();
+    }
+  }
+});

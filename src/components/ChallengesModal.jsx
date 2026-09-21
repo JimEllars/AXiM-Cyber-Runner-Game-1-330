@@ -9,7 +9,20 @@ const { FiTarget, FiX, FiCheckCircle, FiClock } = FiIcons;
 const ChallengesModal = ({ isOpen, onClose }) => {
   const { challengeProgress } = useCyberRunnerStore();
 
+  React.useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && typeof onClose === 'function') {
+        onClose();
+      }
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   const getProgress = (challenge) => {
+
     switch (challenge.type) {
       case 'cumulative_distance': return challengeProgress.cumulative_distance;
       case 'cumulative_nodes': return challengeProgress.cumulative_nodes;

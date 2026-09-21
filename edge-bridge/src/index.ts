@@ -121,6 +121,65 @@ export default {
     const ip = request.headers.get("cf-connecting-ip") || "unknown";
 
 
+
+    // 0. Health Endpoint
+    if (request.method === "GET" && url.pathname === "/api/health") {
+      return new Response(JSON.stringify({
+        status: "ok",
+        uptime: typeof process !== "undefined" && process.uptime ? process.uptime() : 0,
+        region: request.cf && request.cf.colo ? request.cf.colo : "unknown",
+        timestamp: new Date().toISOString()
+      }), {
+        status: 200,
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" }
+      });
+    }
+
+    if (request.method === "OPTIONS" && url.pathname === "/api/telemetry") {
+      return new Response(null, {
+        status: 204,
+        headers: CORS_HEADERS
+      });
+    }
+
+    if (request.method === "POST" && url.pathname === "/api/telemetry") {
+      try {
+        const payloads = await request.json() as any[];
+
+        // Lightweight validation and background processing
+        if (Array.isArray(payloads)) {
+            const validEvents = ["frame_drop", "unhandled_error", "session_complete", "worker_error", "react_crash", "run_performance"];
+            for (const payload of payloads) {
+                if (payload.type && validEvents.includes(payload.type)) {
+                    // Send to Supabase or other analytics engine
+                    ctx.waitUntil(
+                        fetch(`${env.SUPABASE_URL}/rest/v1/telemetry_logs`, {
+                            method: "POST",
+                            headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": `Bearer ${env.SUPABASE_SERVICE_KEY}`,
+                            "apikey": env.SUPABASE_SERVICE_KEY,
+                            },
+                            body: JSON.stringify([{
+                                event_type: payload.type,
+                                payload: payload.payload || payload,
+                                created_at: new Date().toISOString()
+                            }])
+                        }).catch(err => console.error("telemetry_logs error", err))
+                    );
+                }
+            }
+        }
+
+        return new Response(null, {
+          status: 202,
+          headers: CORS_HEADERS
+        });
+      } catch (err: any) {
+        return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: CORS_HEADERS });
+      }
+    }
+
     if (request.method === "OPTIONS") {
       return new Response(null, { headers: CORS_HEADERS });
     }
@@ -347,31 +406,7 @@ export default {
       });
     }
 
-    // 4. Telemetry Routing
-    if (request.method === "POST" && url.pathname === "/api/v1/telemetry") {
-      try {
-        const payload = await request.json() as any;
 
-        ctx.waitUntil(
-          fetch(`${env.SUPABASE_URL}/rest/v1/telemetry_logs`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${env.SUPABASE_SERVICE_KEY}`,
-              "apikey": env.SUPABASE_SERVICE_KEY,
-            },
-            body: JSON.stringify([payload])
-          }).catch(err => console.error(JSON.stringify({ level: "error", type: "cyber_runner_telemetry", data: { message: "telemetry_logs error", error: err instanceof Error ? err.message : err } })))
-        );
-
-        return new Response(JSON.stringify({ success: true }), {
-          status: 200,
-          headers: { ...CORS_HEADERS, "Content-Type": "application/json" }
-        });
-      } catch (err: any) {
-        return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: CORS_HEADERS });
-      }
-    }
 
     // 5. Achievement Sync
     if (request.method === "POST" && url.pathname === "/api/v1/game/sync-achievements") {

@@ -383,8 +383,18 @@ export const useCyberRunnerStore = create(
       toggleMute: () => set((state) => ({ isMuted: !state.isMuted }))
     }),
     {
-      name: 'axim-runner-storage',
-      storage: createJSONStorage(() => localStorage),
+      name: 'axim_runner_saved_state_v1',
+      storage: createJSONStorage(() => localStorage, {
+        reviver: (key, value) => {
+          if (value && typeof value === 'object') {
+            // Check for valid challenge progress shape, fallback if corrupted
+            if (key === 'challengeProgress' && typeof value.best_score !== 'number') {
+              return { cumulative_distance: 0, cumulative_nodes: 0, best_score: 0, streak_days: 0, last_play_date: null, unlocked_challenges: [] };
+            }
+          }
+          return value;
+        }
+      }),
       partialize: (state) => ({ 
         challengeProgress: state.challengeProgress,
         playerAddress: state.playerAddress,
