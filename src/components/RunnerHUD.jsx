@@ -242,7 +242,7 @@ const RunnerHUD = () => {
             onClick={() => purchasePowerUp('shield', 50)}
             disabled={total_bits_balance < 50 || hasShield}
             className={`p-3 rounded-full border-2 transition-all shadow-[0_0_15px_rgba(0,0,0,0.5)] ${
-              total_bits_balance >= 50 && !hasShield
+              hasShield ? 'bg-blue-500 border-blue-400 text-white animate-pulse shadow-[0_0_20px_rgba(0,100,255,0.8)]' : total_bits_balance >= 50 && !hasShield
                 ? 'bg-blue-900/60 border-blue-400 text-blue-400 hover:bg-blue-500 hover:text-black hover:shadow-[0_0_20px_rgba(0,100,255,0.8)]'
                 : 'bg-gray-900/60 border-gray-600 text-gray-500 cursor-not-allowed'
             }`}
@@ -257,7 +257,7 @@ const RunnerHUD = () => {
             onClick={() => purchasePowerUp('multiplier', 100)}
             disabled={total_bits_balance < 100}
             className={`p-3 rounded-full border-2 transition-all shadow-[0_0_15px_rgba(0,0,0,0.5)] ${
-              total_bits_balance >= 100
+              multiplier > 1 ? 'bg-neon-gold border-neon-gold text-black animate-pulse shadow-[0_0_20px_rgba(255,183,0,0.8)]' : total_bits_balance >= 100
                 ? 'bg-neon-gold/20 border-neon-gold text-neon-gold hover:bg-neon-gold hover:text-black hover:shadow-[0_0_20px_rgba(255,183,0,0.8)]'
                 : 'bg-gray-900/60 border-gray-600 text-gray-500 cursor-not-allowed'
             }`}
@@ -290,7 +290,7 @@ const RunnerHUD = () => {
       )}
 
       {gameState === 'PLAYING' && (
-        <div className="flex justify-center gap-8 text-[10px] text-gray-500 font-mono tracking-widest bg-black/20 py-2 rounded-full border border-white/5 backdrop-blur-sm">
+        <div className="hidden sm:flex justify-center gap-8 text-[10px] text-gray-500 font-mono tracking-widest bg-black/20 py-2 rounded-full border border-white/5 backdrop-blur-sm pb-[env(safe-area-inset-bottom)]">
           <span>[SPACE/UP] JUMP</span>
           <span>[DOWN] SLIDE</span>
           <span>[DOUBLE JUMP] AIR JUMP</span>

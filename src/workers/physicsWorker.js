@@ -77,6 +77,12 @@ self.onmessage = function(e) {
           spawnDistance = 800; // Standard distance
       }
   }
+  else if (data.type === 'PAUSE') {
+      // Handled in RunnerCanvas to halt tick propagation
+  }
+  else if (data.type === 'RESUME') {
+      // Handled in RunnerCanvas
+  }
   else if (data.type === 'UPDATE') {
     const { hasMagnet, dt } = data.payload;
     t += dt;

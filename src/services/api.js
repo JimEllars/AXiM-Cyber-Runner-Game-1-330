@@ -1,3 +1,85 @@
+
+let telemetryQueue = [];
+let telemetryTimeout = null;
+
+const flushTelemetry = () => {
+  if (telemetryQueue.length === 0) return;
+
+  const payload = [...telemetryQueue];
+  telemetryQueue = [];
+
+  if (telemetryTimeout) {
+    clearTimeout(telemetryTimeout);
+    telemetryTimeout = null;
+  }
+
+  if (!navigator.onLine) {
+    const stored = JSON.parse(localStorage.getItem('axim_telemetry_queue') || '[]');
+    const newStored = [...stored, ...payload].slice(-20); // Keep max 20
+    localStorage.setItem('axim_telemetry_queue', JSON.stringify(newStored));
+    return;
+  }
+
+  const sendData = (data) => {
+    try {
+      const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon('/api/telemetry', blob);
+      } else {
+        fetch('/api/telemetry', {
+          method: 'POST',
+          body: blob,
+          keepalive: true
+        }).catch(() => {});
+      }
+    } catch (e) {
+      console.debug('Telemetry flush error', e);
+    }
+  };
+
+  sendData(payload);
+};
+
+const queueTelemetry = (type, payload) => {
+  telemetryQueue.push({
+    type,
+    payload,
+    timestamp: new Date().toISOString(),
+    sessionId: sessionStorage.getItem('axim_session_id') || 'unknown',
+    appVersion: '1.0.0'
+  });
+
+  if (telemetryQueue.length >= 5) {
+    flushTelemetry();
+  } else if (!telemetryTimeout) {
+    telemetryTimeout = setTimeout(flushTelemetry, 5000);
+  }
+};
+
+window.addEventListener('online', () => {
+  const stored = JSON.parse(localStorage.getItem('axim_telemetry_queue') || '[]');
+  if (stored.length > 0) {
+    telemetryQueue = [...telemetryQueue, ...stored];
+    localStorage.removeItem('axim_telemetry_queue');
+    flushTelemetry();
+  }
+});
+
+window.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') {
+    flushTelemetry();
+  }
+});
+
+window.addEventListener('pagehide', () => {
+  flushTelemetry();
+});
+
+// Setup session id
+if (!sessionStorage.getItem('axim_session_id')) {
+  sessionStorage.setItem('axim_session_id', Math.random().toString(36).substring(2, 15));
+}
+
 /**
  * AXiM Cyber-Runner API Service
  * Handles communication with the Cloudflare Edge Worker
@@ -150,21 +232,8 @@ export const runnerApi = {
    * Submits telemetry data to the Edge Bridge
    */
   async submitTelemetry(payload) {
-    try {
-      fetch('/api/v1/telemetry', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload)
-      }).catch(err => {
-        console.debug('Telemetry submission failed', err);
-      });
-      return true;
-    } catch (error) {
-      console.debug('Telemetry error', error);
-      return false;
-    }
+    queueTelemetry('submit_telemetry', payload);
+    return true;
   },
 
   /**
@@ -187,17 +256,5 @@ export const runnerApi = {
  * Submits general telemetry event to the Edge Bridge
  */
 export const logTelemetryEvent = (type, payload) => {
-  try {
-    fetch('/api/v1/telemetry', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ type, payload })
-    }).catch(err => {
-      console.debug('Telemetry submission failed', err);
-    });
-  } catch (error) {
-    console.debug('Telemetry error', error);
-  }
+  queueTelemetry(type, payload);
 };

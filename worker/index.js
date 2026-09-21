@@ -45,6 +45,48 @@ export default {
 
     const assetPath = url.pathname.slice(GAME_PATH.length) || "/";
 
+
+    if (assetPath === "/api/health" && request.method === "GET") {
+      return new Response(JSON.stringify({
+        status: "ok",
+        uptime: process?.uptime ? process.uptime() : 0,
+        region: request.cf && request.cf.colo ? request.cf.colo : "unknown",
+        timestamp: new Date().toISOString()
+      }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+
+    if (assetPath === "/api/telemetry" && request.method === "POST") {
+      try {
+        const payload = await request.json();
+        // Here you would process the batched payload using env.waitUntil
+        // env.waitUntil(processTelemetry(payload));
+      } catch (e) {
+        // ignore JSON parse error for telemetry
+      }
+      return new Response(null, {
+        status: 202,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization"
+        }
+      });
+    }
+
+    if (assetPath === "/api/telemetry" && request.method === "OPTIONS") {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization"
+        }
+      });
+    }
+
     if (assetPath.startsWith("/api/")) {
       return Response.json(
         {
