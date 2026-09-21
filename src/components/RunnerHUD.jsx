@@ -45,7 +45,7 @@ const RunnerHUD = () => {
   };
 
   return (
-    <div className="absolute top-0 left-0 w-full h-full pointer-events-none p-4 flex flex-col justify-between z-20">
+    <div className="absolute top-0 left-0 w-full h-full pointer-events-none p-4 safe-top safe-bottom safe-left safe-right flex flex-col justify-between z-20">
             {isPracticeMode && (
         <div className="absolute top-20 left-1/2 -translate-x-1/2 pointer-events-none z-50 animate-pulse opacity-70 mt-[env(safe-area-inset-top)]">
           <div className="bg-neon-magenta/20 border border-neon-magenta text-neon-magenta px-4 py-1 rounded text-xs font-bold tracking-widest uppercase shadow-[0_0_10px_rgba(255,0,127,0.3)] backdrop-blur-sm">

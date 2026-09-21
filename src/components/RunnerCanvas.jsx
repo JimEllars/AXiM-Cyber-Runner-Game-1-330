@@ -144,13 +144,28 @@ const RunnerCanvas = () => {
     };
 
 
+
     // Dynamic resizing
     const updateCanvasSizeRaw = () => {
         if (!canvas.parentElement) return;
-        canvas.width = canvas.parentElement.clientWidth;
-        canvas.height = canvas.parentElement.clientHeight;
+        const rect = canvas.parentElement.getBoundingClientRect();
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+
+        const isPortrait = rect.height > rect.width;
+
         if (worker) {
-            worker.postMessage({ type: 'RESIZE', payload: { width: canvas.width, height: canvas.height } });
+            worker.postMessage({
+                type: 'RESIZE',
+                payload: {
+                    width: rect.width,
+                    height: rect.height,
+                    dpr,
+                    isPortrait
+                }
+            });
         }
     };
 
@@ -220,32 +235,70 @@ const RunnerCanvas = () => {
     window.addEventListener('keydown', handleInput);
     window.addEventListener('keyup', handleInputUp);
 
+
+    let startTouchX = null;
     let startTouchY = null;
+    let isSwipe = false;
 
     const handleTouchStart = (e) => {
       if (gameState !== 'PLAYING') return;
-      e.preventDefault();
+      // Removed e.preventDefault() here to allow clicks on UI elements if needed, though canvas overlays.
+      // e.preventDefault();
       const touch = e.touches[0];
-      const rect = canvas.getBoundingClientRect();
-      const touchX = touch.clientX - rect.left;
-
-      if (touchX > rect.width / 2) {
-          worker.postMessage({ type: 'JUMP' });
-      } else {
-          worker.postMessage({ type: 'SLIDE_START' });
-      }
+      startTouchX = touch.clientX;
+      startTouchY = touch.clientY;
+      isSwipe = false;
     };
 
     const handleTouchMove = (e) => {
-      if (gameState !== 'PLAYING') return;
+      if (gameState !== 'PLAYING' || !startTouchX || !startTouchY) return;
       e.preventDefault();
+
+      const touch = e.touches[0];
+      const diffX = startTouchX - touch.clientX;
+      const diffY = startTouchY - touch.clientY;
+
+      if (Math.abs(diffY) > 30) {
+          isSwipe = true;
+          if (diffY > 0) {
+              // Swipe up
+              worker.postMessage({ type: 'JUMP' });
+              startTouchX = null;
+              startTouchY = null;
+          } else {
+              // Swipe down
+              worker.postMessage({ type: 'SLIDE_START' });
+              startTouchX = null;
+              startTouchY = null;
+          }
+      }
     };
 
     const handleTouchEnd = (e) => {
       if (gameState !== 'PLAYING') return;
-      e.preventDefault();
-      // Only fire end if we lifted from the left side, or just always fire it to be safe
+      // e.preventDefault();
+
+      if (!isSwipe && startTouchX) {
+          // Tap handling (fallback to left/right tap)
+          const rect = canvas.getBoundingClientRect();
+          const touchX = startTouchX - rect.left;
+          if (touchX > rect.width / 2) {
+              worker.postMessage({ type: 'JUMP' });
+          } else {
+              worker.postMessage({ type: 'SLIDE_START' });
+              // Quick slide end for taps
+              setTimeout(() => {
+                 worker.postMessage({ type: 'SLIDE_END' });
+              }, 300);
+          }
+      }
+
+      // Always end slide on touch end
       worker.postMessage({ type: 'SLIDE_END' });
+
+      startTouchX = null;
+      startTouchY = null;
+      isSwipe = false;
     };
 
     canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
@@ -299,25 +352,38 @@ const RunnerCanvas = () => {
           accumulatedDt = 0;
       }
 
-      // Scale for portrait
+
+      // Scale for portrait/landscape
       ctx.save();
       let scale = 1;
       let yOffset = 0;
-      if (canvas.height > canvas.width) {
-          scale = canvas.width / 800; // fit to standard 800 width
-          yOffset = (canvas.height / scale - 400) / 2; // Center vertically
+      let xOffset = 0;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+      const isPortrait = canvas.height > canvas.width;
+
+      // We operate in logical pixels for drawing, so we divide by DPR, but then scale up by DPR
+      ctx.scale(dpr, dpr);
+
+      const logicalWidth = canvas.width / dpr;
+      const logicalHeight = canvas.height / dpr;
+
+      if (isPortrait) {
+          scale = logicalWidth / 800;
+          yOffset = (logicalHeight / scale - 400) * 0.75; // Shift baseline towards bottom
           ctx.scale(scale, scale);
       } else {
-          scale = Math.max(canvas.width / 800, canvas.height / 400);
-          yOffset = (canvas.height / scale - 400) / 2;
+          scale = Math.max(logicalWidth / 800, logicalHeight / 400);
+          yOffset = (logicalHeight / scale - 400) / 2;
           ctx.scale(scale, scale);
       }
 
-      const effectiveWidth = canvas.width / scale;
-      const effectiveHeight = canvas.height / scale;
+      const effectiveWidth = logicalWidth / scale;
+      const effectiveHeight = logicalHeight / scale;
 
       // Update camera translate for yOffset
       ctx.translate(0, yOffset);
+
 
       // Background
       ctx.fillStyle = cachedStyles.themeBackground;
@@ -479,7 +545,7 @@ const RunnerCanvas = () => {
       canvas.removeEventListener('touchend', handleTouchEnd);
       canvas.removeEventListener('touchcancel', handleTouchEnd);
       window.removeEventListener('resize', updateCanvasSize);
-      window.removeEventListener('orientationchange', updateCanvasSizeRaw);
+      window.removeEventListener('orientationchange', updateCanvasSize);
       audioEngine.stopBassline();
     };
   }, [gameState, getSelectedSkin, getSelectedTheme]);
