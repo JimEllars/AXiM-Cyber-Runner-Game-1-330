@@ -8,6 +8,18 @@ import { runnerApi } from '../services/api';
 const { FiX, FiDatabase, FiCpu, FiExternalLink } = FiIcons;
 
 const ClaimModal = ({ isOpen, onClose }) => {
+  React.useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && typeof onClose === 'function') {
+        onClose();
+      }
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   const chainId = useChainId();
   const { switchChain } = useSwitchChain();
   const isWrongNetwork = chainId !== 42161;
@@ -86,6 +98,8 @@ const ClaimModal = ({ isOpen, onClose }) => {
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
       className={`fixed inset-0 bg-black/90 flex items-center justify-center z-50 backdrop-blur-md transition-opacity duration-300 ${
         isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
       }`}

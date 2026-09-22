@@ -22,6 +22,18 @@ const ABI = [
 ];
 
 const TokenGateModal = ({ isOpen, onClose }) => {
+  React.useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && typeof onClose === 'function') {
+        onClose();
+      }
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   const { addToast, syncWalletAddress, startPracticeMode } = useCyberRunnerStore();
   const [txStatus, setTxStatus] = useState('');
 
@@ -121,6 +133,8 @@ const TokenGateModal = ({ isOpen, onClose }) => {
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
       className={`fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm transition-opacity duration-300 ${
         isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
       }`}

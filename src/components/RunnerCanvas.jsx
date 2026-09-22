@@ -184,6 +184,11 @@ const RunnerCanvas = () => {
     updateCanvasSizeRaw();
 
     worker.onmessage = (e) => {
+        if (e.data.type === 'WORKER_ERROR') {
+            console.error("Worker explicitly caught an error:", e.data.payload);
+            logTelemetryEvent('worker_error', { error: e.data.payload });
+            return;
+        }
         if (e.data.type === 'UPDATE_RESULT') {
             const result = e.data.payload;
 
