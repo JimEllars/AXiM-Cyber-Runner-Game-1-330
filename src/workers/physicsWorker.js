@@ -84,6 +84,7 @@ self.onmessage = function(e) {
       // Handled in RunnerCanvas
   }
   else if (data.type === 'UPDATE') {
+    try {
     const { hasMagnet, dt } = data.payload;
     t += dt;
 
@@ -202,5 +203,11 @@ self.onmessage = function(e) {
             dt
         }
     });
+    } catch (error) {
+      self.postMessage({
+        type: 'WORKER_ERROR',
+        payload: { message: error.message, stack: error.stack }
+      });
+    }
   }
 };

@@ -34,6 +34,8 @@ const ChallengesModal = ({ isOpen, onClose }) => {
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
       className={`fixed inset-0 bg-black/90 flex items-center justify-center z-50 backdrop-blur-md transition-opacity duration-300 ${
         isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
       }`}

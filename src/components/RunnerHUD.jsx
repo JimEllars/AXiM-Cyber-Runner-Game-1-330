@@ -17,6 +17,19 @@ const RunnerHUD = () => {
     hasSeenTutorial, setHasSeenTutorial, isPracticeMode, playerAddress, session_bits, purchasePowerUp, total_bits_balance
   } = useCyberRunnerStore();
 
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  React.useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
   React.useEffect(() => {
     let timeout;
     if (gameState === 'PLAYING' && !hasSeenTutorial) {
@@ -54,18 +67,25 @@ const RunnerHUD = () => {
         </div>
       )}
 
-      {/* Global Exit Navigation */}
-      <button
-        onClick={() => {
-          exitFullscreen();
-          window.location.href = 'https://axim.us.com/games';
-        }}
-        className="absolute top-4 right-4 pointer-events-auto z-[100] mt-[env(safe-area-inset-top)] mr-[env(safe-area-inset-right)] p-2 rounded-full bg-black/60 border border-red-500/30 text-red-400 hover:bg-red-500 hover:text-black hover:shadow-[0_0_15px_rgba(255,0,0,0.5)] transition-all focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none"
-        title="Exit to AXiM Hub"
-        aria-label="Exit to AXiM Hub"
-      >
-        <SafeIcon icon={FiX} size={20} />
-      </button>
+      {/* Global Exit Navigation & Telemetry Indicator */}
+      <div className="absolute top-4 right-4 z-[100] mt-[env(safe-area-inset-top)] mr-[env(safe-area-inset-right)] flex items-center gap-4">
+          <div
+            className={`w-2 h-2 rounded-full shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse pointer-events-auto ${isOnline ? 'bg-emerald-400' : 'bg-amber-500'}`}
+            title={isOnline ? "Telemetry: Edge Connected" : "Telemetry: Offline"}
+            aria-label="Edge Telemetry Status"
+          />
+          <button
+            onClick={() => {
+              exitFullscreen();
+              window.location.href = 'https://axim.us.com/games';
+            }}
+            className="pointer-events-auto p-2 rounded-full bg-black/60 border border-red-500/30 text-red-400 hover:bg-red-500 hover:text-black hover:shadow-[0_0_15px_rgba(255,0,0,0.5)] transition-all focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none"
+            title="Exit to AXiM Hub"
+            aria-label="Exit to AXiM Hub"
+          >
+            <SafeIcon icon={FiX} size={20} />
+          </button>
+      </div>
 
       {/* Top HUD */}
 
