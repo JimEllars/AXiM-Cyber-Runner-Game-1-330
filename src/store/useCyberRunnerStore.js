@@ -456,3 +456,26 @@ if (typeof window !== 'undefined' && window.BroadcastChannel) {
     }
   };
 }
+
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', async () => {
+    const queue = JSON.parse(localStorage.getItem('axim_offline_queue') || '[]');
+    if (queue.length > 0) {
+      console.log('Network online. Flushing offline run queue...', queue.length);
+      localStorage.removeItem('axim_offline_queue');
+
+      for (const payload of queue) {
+        try {
+          await runnerApi.submitRun(payload);
+        } catch (e) {
+          console.error('Failed to flush run to API', e);
+          // Re-queue
+          const currentQueue = JSON.parse(localStorage.getItem('axim_offline_queue') || '[]');
+          currentQueue.push(payload);
+          localStorage.setItem('axim_offline_queue', JSON.stringify(currentQueue));
+        }
+      }
+    }
+  });
+}

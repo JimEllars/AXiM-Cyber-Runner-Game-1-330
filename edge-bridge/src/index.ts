@@ -116,6 +116,28 @@ export default {
   },
 
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    const startTime = Date.now();
+    const response = await this.handleRequest(request, env, ctx);
+    const latency = Date.now() - startTime;
+    const headers = new Headers(response.headers);
+    headers.set("Server-Timing", `total;dur=${latency}`);
+    headers.set("X-Edge-Origin", "cloudflare-worker");
+    headers.set("X-AXiM-Colo", (request.cf && request.cf.colo) ? (request.cf.colo as string) : "unknown");
+
+    const requestTelemetry = {
+        timestamp: new Date().toISOString(),
+        colo: (request.cf && request.cf.colo) ? request.cf.colo : "unknown",
+        country: (request.cf && request.cf.country) ? request.cf.country : "unknown",
+        userAgent: request.headers.get("user-agent") || "unknown",
+        latency_ms: latency,
+        status: response.status,
+        url: request.url
+    };
+    console.log(JSON.stringify({ type: "edge_request_telemetry", data: requestTelemetry }));
+
+    return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+  },
+  async handleRequest(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
 
     const ip = request.headers.get("cf-connecting-ip") || "unknown";

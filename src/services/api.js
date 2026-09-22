@@ -87,19 +87,32 @@ if (!sessionStorage.getItem('axim_session_id')) {
 
 const API_BASE = 'api/v1/game';
 
-const fetchWithTimeout = async (resource, options = {}) => {
+const fetchWithTimeout = async (resource, options = {}, retries = 3) => {
   const { timeout = 3000 } = options;
 
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeout);
+  for (let i = 0; i < retries; i++) {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeout);
 
-  const response = await fetch(resource, {
-    ...options,
-    signal: controller.signal
-  });
-  clearTimeout(id);
+    try {
+      const response = await fetch(resource, {
+        ...options,
+        signal: controller.signal
+      });
+      clearTimeout(id);
 
-  return response;
+      // If it's a 5xx error or rate limit, we might want to retry
+      if (!response.ok && response.status >= 500) {
+        throw new Error(`Server error: ${response.status}`);
+      }
+      return response;
+    } catch (err) {
+      clearTimeout(id);
+      if (i === retries - 1) throw err;
+      // Exponential backoff
+      await new Promise(res => setTimeout(res, Math.pow(2, i) * 500));
+    }
+  }
 };
 
 export const runnerApi = {
@@ -173,9 +186,9 @@ export const runnerApi = {
   async submitRun(payload) {
     if (!navigator.onLine) {
       // Offline: Queue the score
-      const pendingScores = JSON.parse(localStorage.getItem('axim_pending_scores') || '[]');
+      const pendingScores = JSON.parse(localStorage.getItem('axim_offline_queue') || '[]');
       pendingScores.push(payload);
-      localStorage.setItem('axim_pending_scores', JSON.stringify(pendingScores));
+      localStorage.setItem('axim_offline_queue', JSON.stringify(pendingScores));
       console.log('Network offline, score queued locally.');
       // Return a mock success response to allow the game to transition to game over state
       return { success: true, queued: true };
@@ -197,9 +210,9 @@ export const runnerApi = {
     } catch (error) {
       // If fetch fails (e.g. timeout), also queue it
       console.error('Submission Error:', error);
-      const pendingScores = JSON.parse(localStorage.getItem('axim_pending_scores') || '[]');
+      const pendingScores = JSON.parse(localStorage.getItem('axim_offline_queue') || '[]');
       pendingScores.push(payload);
-      localStorage.setItem('axim_pending_scores', JSON.stringify(pendingScores));
+      localStorage.setItem('axim_offline_queue', JSON.stringify(pendingScores));
       console.log('Submission failed, score queued locally.');
       return { success: true, queued: true }; // return success to unblock UI
     }
