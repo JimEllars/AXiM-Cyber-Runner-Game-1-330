@@ -581,6 +581,8 @@ const RunnerCanvas = () => {
       canvas.removeEventListener('touchmove', handleTouchMove);
       canvas.removeEventListener('touchend', handleTouchEnd);
       canvas.removeEventListener('touchcancel', handleTouchEnd);
+      canvas.removeEventListener('contextlost', handleContextLost);
+      canvas.removeEventListener('contextrestored', handleContextRestored);
       window.removeEventListener('resize', updateCanvasSize);
       window.removeEventListener('orientationchange', updateCanvasSize);
       audioEngine.stopBassline();

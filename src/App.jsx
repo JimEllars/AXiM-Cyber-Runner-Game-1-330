@@ -66,35 +66,19 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const syncPendingScores = async () => {
-      const pendingScores = JSON.parse(localStorage.getItem('axim_pending_scores') || '[]');
-      if (pendingScores.length === 0) return;
 
-      console.log(`Syncing ${pendingScores.length} pending scores...`);
-      const remainingScores = [];
-
-      for (const payload of pendingScores) {
-        try {
-          await runnerApi.submitRun(payload);
-          console.log('Successfully synced a pending score');
-        } catch (err) {
-          console.error('Failed to sync pending score, keeping in queue', err);
-          remainingScores.push(payload);
-        }
-      }
-
-      localStorage.setItem('axim_pending_scores', JSON.stringify(remainingScores));
+    const handleOnline = () => {
+      runnerApi.flushOfflineQueue();
     };
 
-    window.addEventListener('online', syncPendingScores);
+    window.addEventListener('online', handleOnline);
 
-    // Also try to sync on initial load if online
     if (navigator.onLine) {
-      syncPendingScores();
+      runnerApi.flushOfflineQueue();
     }
 
     return () => {
-      window.removeEventListener('online', syncPendingScores);
+      window.removeEventListener('online', handleOnline);
     };
   }, []);
 

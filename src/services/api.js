@@ -115,7 +115,33 @@ const fetchWithTimeout = async (resource, options = {}, retries = 3) => {
   }
 };
 
+
 export const runnerApi = {
+  flushOfflineQueue: async () => {
+    const legacyScores = JSON.parse(localStorage.getItem('axim_pending_scores') || '[]');
+    if (legacyScores.length > 0) {
+      const currentQueue = JSON.parse(localStorage.getItem('axim_offline_queue') || '[]');
+      localStorage.setItem('axim_offline_queue', JSON.stringify([...currentQueue, ...legacyScores]));
+      localStorage.removeItem('axim_pending_scores');
+    }
+
+    const queue = JSON.parse(localStorage.getItem('axim_offline_queue') || '[]');
+    if (queue.length === 0) return;
+
+    console.log('Flushing offline run queue...', queue.length);
+    localStorage.removeItem('axim_offline_queue');
+
+    for (const payload of queue) {
+      try {
+        await runnerApi.submitRun(payload);
+      } catch (e) {
+        console.error('Failed to flush run to API', e);
+        const currentQueue = JSON.parse(localStorage.getItem('axim_offline_queue') || '[]');
+        currentQueue.push(payload);
+        localStorage.setItem('axim_offline_queue', JSON.stringify(currentQueue));
+      }
+    }
+  },
   /**
    * Validates the current SIWE session
    */
