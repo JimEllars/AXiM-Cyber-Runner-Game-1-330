@@ -87,6 +87,28 @@ const RunnerCanvas = () => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
 
+
+    const handleContextLost = (e) => {
+        e.preventDefault(); // Prevents default behavior which is to not restore it
+        console.warn('Canvas context lost. Pausing rendering.');
+        useCyberRunnerStore.getState().setIsPaused(true);
+        logTelemetryEvent('react_crash', { error: 'Canvas2D Context Lost', isRecoverable: true });
+
+        // Also inform the user somehow. A simple toast can do or error boundary.
+        // For ErrorBoundary to catch it, we'd have to throw, but we want to recover.
+        // We will just wait for contextrestored.
+    };
+
+    const handleContextRestored = (e) => {
+        console.info('Canvas context restored. Resuming rendering.');
+        // Re-initialize offscreen canvases
+        // No need to re-init offscreen 2d canvases
+        useCyberRunnerStore.getState().setIsPaused(false);
+    };
+
+    canvas.addEventListener('contextlost', handleContextLost);
+    canvas.addEventListener('contextrestored', handleContextRestored);
+
     let animationFrameId;
 
     const handleVisibilityChange = () => {
@@ -247,9 +269,9 @@ const RunnerCanvas = () => {
     let isSwipe = false;
 
     const handleTouchStart = (e) => {
+      e.preventDefault();
+
       if (gameState !== 'PLAYING') return;
-      // Removed e.preventDefault() here to allow clicks on UI elements if needed, though canvas overlays.
-      // e.preventDefault();
       const touch = e.touches[0];
       startTouchX = touch.clientX;
       startTouchY = touch.clientY;
@@ -257,8 +279,9 @@ const RunnerCanvas = () => {
     };
 
     const handleTouchMove = (e) => {
-      if (gameState !== 'PLAYING' || !startTouchX || !startTouchY) return;
       e.preventDefault();
+
+      if (gameState !== 'PLAYING' || !startTouchX || !startTouchY) return;
 
       const touch = e.touches[0];
       const diffX = startTouchX - touch.clientX;
@@ -281,8 +304,8 @@ const RunnerCanvas = () => {
     };
 
     const handleTouchEnd = (e) => {
+      e.preventDefault();
       if (gameState !== 'PLAYING') return;
-      // e.preventDefault();
 
       if (!isSwipe && startTouchX) {
           // Tap handling (fallback to left/right tap)
