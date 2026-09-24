@@ -1,3 +1,4 @@
+import edgeBridge from "../edge-bridge/src/index.ts";
 const GAME_PATH = "/games/Cyber-Runner";
 
 const SECURITY_HEADERS = {
@@ -32,7 +33,13 @@ function withSecurityHeaders(response, assetPath) {
 }
 
 export default {
-  async fetch(request, env) {
+
+  scheduled(event, env, ctx) {
+    if (edgeBridge.scheduled) {
+      return edgeBridge.scheduled(event, env, ctx);
+    }
+  },
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
 
@@ -89,6 +96,12 @@ export default {
             "Access-Control-Allow-Headers": "Content-Type, Authorization"
           }
         });
+      } else if (assetPath.startsWith("/api/v1/game/")) {
+        // Rewrite URL to match edge bridge expected path
+        const edgeUrl = new URL(request.url);
+        edgeUrl.pathname = assetPath;
+        const edgeRequest = new Request(edgeUrl, request);
+        response = await edgeBridge.fetch(edgeRequest, env, ctx);
       } else if (assetPath.startsWith("/api/")) {
         response = Response.json(
           {

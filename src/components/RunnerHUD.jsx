@@ -18,6 +18,21 @@ const RunnerHUD = () => {
   } = useCyberRunnerStore();
 
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [offlineQueueCount, setOfflineQueueCount] = useState(0);
+
+  React.useEffect(() => {
+    const updateQueueCount = () => {
+      const queue = JSON.parse(localStorage.getItem('axim_offline_queue') || '[]');
+      setOfflineQueueCount(queue.length);
+    };
+    updateQueueCount();
+    window.addEventListener('storage', updateQueueCount);
+    const interval = setInterval(updateQueueCount, 2000);
+    return () => {
+      window.removeEventListener('storage', updateQueueCount);
+      clearInterval(interval);
+    };
+  }, []);
 
   React.useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -69,11 +84,24 @@ const RunnerHUD = () => {
 
       {/* Global Exit Navigation & Telemetry Indicator */}
       <div className="absolute top-4 right-4 z-[100] mt-[env(safe-area-inset-top)] mr-[env(safe-area-inset-right)] flex items-center gap-4">
-          <div
-            className={`w-2 h-2 rounded-full shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse pointer-events-auto ${isOnline ? 'bg-emerald-400' : 'bg-amber-500'}`}
-            title={isOnline ? "Telemetry: Edge Connected" : "Telemetry: Offline"}
-            aria-label="Edge Telemetry Status"
-          />
+          <div className="group relative pointer-events-auto">
+            <div
+              className={`w-3 h-3 rounded-full ${isOnline ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse' : 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]'}`}
+              title={isOnline ? "Telemetry: Edge Connected" : `Offline (${offlineQueueCount} Queued)`}
+              aria-label="Edge Telemetry Status"
+              role="status"
+            />
+            {/* Tooltip */}
+            <div className="absolute right-0 mt-2 whitespace-nowrap bg-black/80 text-white text-[10px] font-mono px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity border border-white/10 pointer-events-none">
+              {isOnline ? "Edge Connected" : `Offline (${offlineQueueCount} Queued)`}
+            </div>
+            {/* Badge for queued runs when offline */}
+            {!isOnline && offlineQueueCount > 0 && (
+              <div className="absolute -top-2 -right-2 bg-red-500 text-white text-[8px] font-bold px-1 rounded-full animate-bounce">
+                {offlineQueueCount}
+              </div>
+            )}
+          </div>
           <button
             onClick={() => {
               exitFullscreen();
