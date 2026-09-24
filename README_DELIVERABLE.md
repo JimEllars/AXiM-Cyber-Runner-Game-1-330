@@ -110,3 +110,9 @@ To intentionally trigger an error and verify the telemetry routing:
 
 ## Mobile Audio Context Guard
 - The game audio context is explicitly resumed on interaction (e.g. clicking Start Run or Play Practice Mode), ensuring mobile browsers do not mute the game due to autoplay policies.
+
+## Verification Steps
+1. Executed `test_plan.sh` which confirmed `eslint`, Vite production build, `wrangler types`, and critical exports all pass.
+2. Verified Safe Mobile Haptics Helper replaced direct calls to `navigator.vibrate` with `triggerHaptic`.
+3. Verified edge bridge properly handles 429 logic with `Retry-After: 10` headers.
+4. Verified `SYS.DIAG` HUD accessibility includes `FiX` close icon, `Escape` key support, and `offlineQueueCount` indicator.

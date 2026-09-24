@@ -17,6 +17,7 @@ const RunnerHUD = () => {
 
   React.useEffect(() => {
     const handleKeyDown = (e) => {
+      if (e.key === 'Escape') { setShowTelemetry(false); }
       if (e.key === '`' || e.key === '~') {
         setShowTelemetry(prev => !prev);
       }
@@ -330,12 +331,19 @@ const RunnerHUD = () => {
 
       {/* Telemetry Diagnostics Panel */}
       <div
-        onClick={() => setShowTelemetry(!showTelemetry)}
-        className={`absolute bottom-4 right-4 z-50 transition-all duration-300 font-mono text-[10px] uppercase cursor-pointer ${showTelemetry ? 'opacity-100' : 'opacity-30 hover:opacity-100'} bg-black/60 border ${showTelemetry ? 'border-neon-cyan' : 'border-white/20'} rounded p-2 backdrop-blur-sm`}
+        className={`absolute bottom-4 right-4 z-50 transition-all duration-300 font-mono text-[10px] uppercase ${showTelemetry ? 'opacity-100' : 'opacity-30 hover:opacity-100 cursor-pointer'} bg-black/60 border ${showTelemetry ? 'border-neon-cyan' : 'border-white/20'} rounded p-2 backdrop-blur-sm`}
+        onClick={(e) => { if (!showTelemetry) setShowTelemetry(true); }}
       >
-         <div className="flex items-center gap-2 mb-1">
-             <SafeIcon icon={FiActivity} className="text-neon-cyan" />
-             <span className="text-neon-cyan font-bold tracking-widest">SYS.DIAG</span>
+         <div className="flex items-center justify-between gap-2 mb-1">
+             <div className="flex items-center gap-2">
+               <SafeIcon icon={FiActivity} className="text-neon-cyan" />
+               <span className="text-neon-cyan font-bold tracking-widest">SYS.DIAG</span>
+             </div>
+             {showTelemetry && (
+               <button onClick={(e) => { e.stopPropagation(); setShowTelemetry(false); }} className="text-gray-400 hover:text-white" title="Close" aria-label="Close SYS.DIAG">
+                 <SafeIcon icon={FiX} />
+               </button>
+             )}
          </div>
          {showTelemetry && (
              <div className="flex flex-col gap-1 text-gray-300 mt-2">
@@ -354,6 +362,10 @@ const RunnerHUD = () => {
                  <div className="flex justify-between gap-4">
                      <span>WORKER:</span>
                      <span className={telemetryStats.workerStatus === 'ACTIVE' ? 'text-green-400' : 'text-red-500'}>{telemetryStats.workerStatus}</span>
+                 </div>
+                 <div className="flex justify-between gap-4">
+                     <span>QUEUED:</span>
+                     <span className={offlineQueueCount > 0 ? 'text-yellow-500' : 'text-green-400'}>{offlineQueueCount}</span>
                  </div>
              </div>
          )}

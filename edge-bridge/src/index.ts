@@ -230,10 +230,9 @@ export default {
       const startTime = Date.now();
 
         if (!checkRateLimit(ip)) {
-          // Rate limit exceeded: silently drop write, return 200 OK
-          return new Response(JSON.stringify({ success: true, status: "score_verified_rate_limited" }), {
-            status: 200,
-            headers: { ...CORS_HEADERS, "Content-Type": "application/json" }
+          return new Response(JSON.stringify({ error: "Rate limit exceeded. Please wait 10 seconds before submitting." }), {
+            status: 429,
+            headers: { ...CORS_HEADERS, "Content-Type": "application/json", "Retry-After": "10" }
           });
         }
 
@@ -454,9 +453,9 @@ export default {
     // 5. Achievement Sync
     if (request.method === "POST" && url.pathname === "/api/v1/game/sync-achievements") {
       if (!checkRateLimit(ip)) {
-        return new Response(JSON.stringify({ success: true, status: "rate_limited" }), {
-          status: 200,
-          headers: { ...CORS_HEADERS, "Content-Type": "application/json" }
+        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please wait 10 seconds before submitting." }), {
+          status: 429,
+          headers: { ...CORS_HEADERS, "Content-Type": "application/json", "Retry-After": "10" }
         });
       }
 
