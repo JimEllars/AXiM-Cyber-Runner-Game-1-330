@@ -44,3 +44,13 @@ export const nativeShare = async (shareData) => {
     return await copyToClipboard(shareData.text);
   }
 };
+
+export const triggerHaptic = (pattern = [15]) => {
+  if (typeof navigator !== 'undefined' && 'vibrate' in navigator && typeof navigator.vibrate === 'function') {
+    try {
+      navigator.vibrate(pattern);
+    } catch (e) {
+      // Silently ignore platform-specific errors
+    }
+  }
+};

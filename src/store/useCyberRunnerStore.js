@@ -1,3 +1,4 @@
+import { triggerHaptic } from '../utils/shareHelpers';
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { runnerApi } from '../services/api';
@@ -335,7 +336,7 @@ export const useCyberRunnerStore = create(
       },
       
       collectNode: (type) => {
-        if (typeof navigator !== 'undefined' && 'vibrate' in navigator) navigator.vibrate([15]);
+        triggerHaptic([15]);
         return set((state) => {
         let pts = 0;
         let newShield = state.hasShield;
@@ -384,7 +385,7 @@ export const useCyberRunnerStore = create(
       },
 
       hitObstacle: () => {
-        if (typeof navigator !== 'undefined' && 'vibrate' in navigator) navigator.vibrate([50]);
+        triggerHaptic([50]);
         const { hasShield } = get();
         if (hasShield) {
           set({ hasShield: false });

@@ -1,3 +1,4 @@
+import { triggerHaptic } from '../utils/shareHelpers';
 import React, { useEffect, useRef } from 'react';
 import { logTelemetryEvent } from '../services/api';
 import { useCyberRunnerStore } from '../store/useCyberRunnerStore';
@@ -364,7 +365,7 @@ const RunnerCanvas = () => {
     const handleInput = (e) => {
       if (gameState !== 'PLAYING') return;
       if (e.code === 'Space' || e.code === 'ArrowUp') {
-          if (typeof navigator !== 'undefined' && 'vibrate' in navigator) navigator.vibrate([15]); worker.postMessage({ type: 'JUMP' });
+          triggerHaptic([15]); worker.postMessage({ type: 'JUMP' });
       }
       if (e.code === 'ArrowDown') {
           worker.postMessage({ type: 'SLIDE_START' });
@@ -409,7 +410,7 @@ const RunnerCanvas = () => {
           if (diffY > 0) {
               // Swipe up
               if (!fallbackMode) {
-                  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) navigator.vibrate([15]);
+                  triggerHaptic([15]);
                   worker.postMessage({ type: 'JUMP' });
               } else {
                   if (renderState.player.jumpCount < renderState.player.maxJumps) {
@@ -446,7 +447,7 @@ const RunnerCanvas = () => {
           const touchX = startTouchX - rect.left;
           if (touchX > rect.width / 2) {
               if (!fallbackMode) {
-                  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) navigator.vibrate([15]);
+                  triggerHaptic([15]);
                   worker.postMessage({ type: 'JUMP' });
               } else {
                   if (renderState.player.jumpCount < renderState.player.maxJumps) {
