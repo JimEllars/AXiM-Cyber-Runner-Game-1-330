@@ -66,16 +66,21 @@ export default {
       } else if (assetPath === "/api/telemetry" && request.method === "POST") {
         try {
           const payload = await request.json();
-          const telemetryData = {
-            timestamp: new Date().toISOString(),
-            colo: request.cf?.colo || 'unknown',
-            country: request.cf?.country || 'unknown',
-            userAgentHash: request.headers.get('user-agent') || 'unknown',
-            payload
-          };
-          console.log(JSON.stringify({ type: 'client_telemetry', data: telemetryData }));
-          // Here you would process the batched payload using env.waitUntil
-          // env.waitUntil(processTelemetry(telemetryData));
+          // Ensure it's treated as an array of events
+          const events = Array.isArray(payload) ? payload : [payload];
+
+          for (const event of events) {
+            const telemetryData = {
+              eventType: event.eventType || event.type || 'UNKNOWN',
+              timestamp: event.timestamp || new Date().toISOString(),
+              sessionId: event.sessionId || 'unknown',
+              metrics: event.metrics || event.payload || {},
+              colo: request.cf?.colo || 'unknown',
+              country: request.cf?.country || 'unknown',
+              userAgent: request.headers.get('user-agent') || 'unknown'
+            };
+            console.log(JSON.stringify(telemetryData));
+          }
         } catch (e) {
           // ignore JSON parse error for telemetry
         }

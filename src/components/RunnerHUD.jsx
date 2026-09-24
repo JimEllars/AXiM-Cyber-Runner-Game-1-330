@@ -6,11 +6,56 @@ import SafeIcon from '../common/SafeIcon';
 import { generateShareData, copyToClipboard, nativeShare } from '../utils/shareHelpers';
 import { requestFullscreen, exitFullscreen } from '../utils/fullscreen';
 import ClaimModal from './ClaimModal';
+import { FiActivity } from 'react-icons/fi';
 
 const { FiShield, FiZap, FiPlay, FiRefreshCw, FiLoader, FiTwitter, FiSend, FiCopy, FiShare2, FiVolume2, FiVolumeX, FiDatabase, FiX } = FiIcons;
 
 const RunnerHUD = () => {
   const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
+  const [showTelemetry, setShowTelemetry] = useState(false);
+  const [telemetryStats, setTelemetryStats] = useState({ fps: 60, latency: 0, workerStatus: 'ACTIVE' });
+
+  React.useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === '`' || e.key === '~') {
+        setShowTelemetry(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    let frameCount = 0;
+    let lastTime = performance.now();
+    let animId;
+
+    const updateStats = () => {
+       frameCount++;
+       const now = performance.now();
+       if (now - lastTime >= 1000) {
+           const fps = Math.round((frameCount * 1000) / (now - lastTime));
+           frameCount = 0;
+           lastTime = now;
+           setTelemetryStats(prev => ({
+               ...prev,
+               fps,
+               workerStatus: window.__AXIM_WORKER_STATUS || 'ACTIVE'
+           }));
+
+           if (showTelemetry && navigator.onLine) {
+               const pingStart = Date.now();
+               fetch('/api/health').then(() => {
+                   setTelemetryStats(prev => ({ ...prev, latency: Date.now() - pingStart }));
+               }).catch(() => {});
+           }
+       }
+       animId = requestAnimationFrame(updateStats);
+    };
+    animId = requestAnimationFrame(updateStats);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      cancelAnimationFrame(animId);
+    };
+  }, [showTelemetry]);
   const { 
     gameState, score, distance, multiplier, streakMultiplier, challengeProgress, hasShield,
     crtEnabled, toggleCrt, isMuted, toggleMute, startGame, startPracticeMode, ticketStatus, addToast,
@@ -282,6 +327,37 @@ const RunnerHUD = () => {
         )}
       </div>
 
+
+      {/* Telemetry Diagnostics Panel */}
+      <div
+        onClick={() => setShowTelemetry(!showTelemetry)}
+        className={`absolute bottom-4 right-4 z-50 transition-all duration-300 font-mono text-[10px] uppercase cursor-pointer ${showTelemetry ? 'opacity-100' : 'opacity-30 hover:opacity-100'} bg-black/60 border ${showTelemetry ? 'border-neon-cyan' : 'border-white/20'} rounded p-2 backdrop-blur-sm`}
+      >
+         <div className="flex items-center gap-2 mb-1">
+             <SafeIcon icon={FiActivity} className="text-neon-cyan" />
+             <span className="text-neon-cyan font-bold tracking-widest">SYS.DIAG</span>
+         </div>
+         {showTelemetry && (
+             <div className="flex flex-col gap-1 text-gray-300 mt-2">
+                 <div className="flex justify-between gap-4">
+                     <span>FPS:</span>
+                     <span className={telemetryStats.fps < 30 ? 'text-red-500' : 'text-green-400'}>{telemetryStats.fps}</span>
+                 </div>
+                 <div className="flex justify-between gap-4">
+                     <span>NET:</span>
+                     <span className={navigator.onLine ? 'text-green-400' : 'text-red-500'}>{navigator.onLine ? 'ONLINE' : 'CACHED'}</span>
+                 </div>
+                 <div className="flex justify-between gap-4">
+                     <span>EDGE PING:</span>
+                     <span className={telemetryStats.latency > 150 ? 'text-yellow-500' : 'text-green-400'}>{telemetryStats.latency}ms</span>
+                 </div>
+                 <div className="flex justify-between gap-4">
+                     <span>WORKER:</span>
+                     <span className={telemetryStats.workerStatus === 'ACTIVE' ? 'text-green-400' : 'text-red-500'}>{telemetryStats.workerStatus}</span>
+                 </div>
+             </div>
+         )}
+      </div>
 
       {/* Power-Up HUD */}
       {gameState === 'PLAYING' && (

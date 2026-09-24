@@ -150,7 +150,124 @@ const RunnerCanvas = () => {
     let workerBusy = false;
     let accumulatedDt = 0;
 
-    const worker = new Worker(new URL('../workers/physicsWorker.js', import.meta.url), { type: 'module' });
+    let lastWorkerResponseTime = Date.now();
+    let workerRestartCount = 0;
+    let fallbackMode = false;
+    let watchdogTimer = null;
+
+    // Fallback simple physics step
+    const fallbackPhysicsStep = (dt) => {
+        // very simplified logic to keep the loop from freezing
+        renderState.player.vy += 1500 * dt;
+        renderState.player.y += renderState.player.vy * dt;
+        if (renderState.player.y >= (renderState.player.isSliding ? 275 : 250)) {
+            renderState.player.y = renderState.player.isSliding ? 275 : 250;
+            renderState.player.vy = 0;
+            renderState.player.jumpCount = 0;
+        }
+
+        const speedMultiplier = window.innerHeight > window.innerWidth ? 0.85 : 1.0;
+        const speed = 400 * speedMultiplier;
+        renderState.speed = speed;
+
+        for (let i = 0; i < renderState.obstacles.length; i++) {
+            renderState.obstacles[i].x -= speed * dt;
+        }
+        for (let i = 0; i < renderState.nodes.length; i++) {
+            renderState.nodes[i].x -= speed * dt;
+        }
+
+        // Very simplified spawn
+        if (Math.random() > 0.985) {
+            renderState.obstacles.push({
+                x: 800,
+                y: Math.random() > 0.5 ? 180 : 270,
+                w: 25,
+                h: 30,
+                type: 'low'
+            });
+        }
+        if (Math.random() > 0.98) {
+            renderState.nodes.push({
+                x: 800,
+                y: 120 + Math.random() * 150,
+                w: 18,
+                h: 18,
+                type: 'cyan'
+            });
+        }
+
+        // Simple collision
+        for (let obs of renderState.obstacles) {
+             if (
+                 renderState.player.x < obs.x + obs.w &&
+                 renderState.player.x + renderState.player.w > obs.x &&
+                 renderState.player.y < obs.y + obs.h &&
+                 renderState.player.y + renderState.player.h > obs.y
+             ) {
+                 hitObstacle();
+             }
+        }
+
+        for (let node of renderState.nodes) {
+             if (
+                 renderState.player.x < node.x + node.w &&
+                 renderState.player.x + renderState.player.w > node.x &&
+                 renderState.player.y < node.y + node.h &&
+                 renderState.player.y + renderState.player.h > node.y
+             ) {
+                 collectNode(node.type);
+                 node.x = -1000; // hide it
+             }
+        }
+
+        // Update store distance for fallback
+        updateDistance(useCyberRunnerStore.getState().distance + (speed * dt / 100), useCyberRunnerStore.getState().score + (speed * dt / 100));
+    };
+
+    let worker = new Worker(new URL('../workers/physicsWorker.js', import.meta.url), { type: 'module' });
+
+    const initWorker = () => {
+        worker.postMessage({ type: 'INIT', payload: { width: window.innerWidth, height: window.innerHeight } });
+
+        worker.onerror = (errorEvent) => {
+          logTelemetryEvent('WORKER_ERROR', { error: errorEvent.message });
+        };
+        worker.onmessageerror = (event) => {
+          logTelemetryEvent('WORKER_ERROR', { error: 'Message serialization error' });
+        };
+
+        worker.onmessage = (e) => {
+            lastWorkerResponseTime = Date.now();
+            if (e.data.type === 'UPDATE_RESULT') {
+                const res = e.data.payload;
+                renderState.player = res.player;
+                renderState.obstacles = res.obstacles;
+                renderState.nodes = res.nodes;
+                renderState.speed = res.speed;
+                workerBusy = false;
+
+                if (res.hitObstacle) {
+                    hitObstacle();
+                }
+
+                if (res.collectedNodes && res.collectedNodes.length > 0) {
+                    res.collectedNodes.forEach(type => {
+                       collectNode(type);
+                    });
+                }
+
+                updateDistance(useCyberRunnerStore.getState().distance + (res.speed * res.dt / 100), useCyberRunnerStore.getState().score + (res.speed * res.dt / 100));
+            } else if (e.data.type === 'WORKER_ERROR') {
+                logTelemetryEvent('WORKER_ERROR', { error: e.data.payload });
+            } else if (e.data.type === 'PLAY_SOUND') {
+                if (e.data.payload === 'JUMP') {
+                    audioEngine.playJump();
+                }
+            }
+        };
+    };
+
     worker.postMessage({ type: 'INIT', payload: { width: window.innerWidth, height: window.innerHeight } });
     if (gameState === 'PLAYING') {
       worker.postMessage({ type: 'RESET' });
@@ -247,7 +364,7 @@ const RunnerCanvas = () => {
     const handleInput = (e) => {
       if (gameState !== 'PLAYING') return;
       if (e.code === 'Space' || e.code === 'ArrowUp') {
-          worker.postMessage({ type: 'JUMP' });
+          if (typeof navigator !== 'undefined' && 'vibrate' in navigator) navigator.vibrate([15]); worker.postMessage({ type: 'JUMP' });
       }
       if (e.code === 'ArrowDown') {
           worker.postMessage({ type: 'SLIDE_START' });
@@ -291,12 +408,28 @@ const RunnerCanvas = () => {
           isSwipe = true;
           if (diffY > 0) {
               // Swipe up
-              worker.postMessage({ type: 'JUMP' });
+              if (!fallbackMode) {
+                  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) navigator.vibrate([15]);
+                  worker.postMessage({ type: 'JUMP' });
+              } else {
+                  if (renderState.player.jumpCount < renderState.player.maxJumps) {
+                      renderState.player.vy = -550;
+                      renderState.player.jumpCount++;
+                      renderState.player.isSliding = false;
+                      audioEngine.playJump();
+                  }
+              }
               startTouchX = null;
               startTouchY = null;
           } else {
               // Swipe down
-              worker.postMessage({ type: 'SLIDE_START' });
+              if (!fallbackMode) {
+                  worker.postMessage({ type: 'SLIDE_START' });
+              } else {
+                  renderState.player.isSliding = true;
+                  renderState.player.h = 25;
+                  renderState.player.y = 275;
+              }
               startTouchX = null;
               startTouchY = null;
           }
@@ -312,18 +445,44 @@ const RunnerCanvas = () => {
           const rect = canvas.getBoundingClientRect();
           const touchX = startTouchX - rect.left;
           if (touchX > rect.width / 2) {
-              worker.postMessage({ type: 'JUMP' });
+              if (!fallbackMode) {
+                  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) navigator.vibrate([15]);
+                  worker.postMessage({ type: 'JUMP' });
+              } else {
+                  if (renderState.player.jumpCount < renderState.player.maxJumps) {
+                      renderState.player.vy = -550;
+                      renderState.player.jumpCount++;
+                      renderState.player.isSliding = false;
+                      audioEngine.playJump();
+                  }
+              }
           } else {
-              worker.postMessage({ type: 'SLIDE_START' });
+              if (!fallbackMode) {
+                  worker.postMessage({ type: 'SLIDE_START' });
+              } else {
+                  renderState.player.isSliding = true;
+                  renderState.player.h = 25;
+                  renderState.player.y = 275;
+              }
               // Quick slide end for taps
               setTimeout(() => {
-                 worker.postMessage({ type: 'SLIDE_END' });
+                 if (!fallbackMode) worker.postMessage({ type: 'SLIDE_END' });
+                 else {
+                     renderState.player.isSliding = false;
+                     renderState.player.h = 50;
+                     renderState.player.y = 250;
+                 }
               }, 300);
           }
       }
 
       // Always end slide on touch end
-      worker.postMessage({ type: 'SLIDE_END' });
+      if (!fallbackMode) worker.postMessage({ type: 'SLIDE_END' });
+      else {
+          renderState.player.isSliding = false;
+          renderState.player.h = 50;
+          renderState.player.y = 250;
+      }
 
       startTouchX = null;
       startTouchY = null;
@@ -377,7 +536,12 @@ const RunnerCanvas = () => {
 
       accumulatedDt += dt;
 
-      if (!workerBusy && accumulatedDt > 0) {
+      if (fallbackMode) {
+          if (accumulatedDt > 0) {
+              fallbackPhysicsStep(accumulatedDt);
+              accumulatedDt = 0;
+          }
+      } else if (!workerBusy && accumulatedDt > 0) {
           workerBusy = true;
           worker.postMessage({
               type: 'UPDATE',
@@ -573,6 +737,7 @@ const RunnerCanvas = () => {
     return () => {
       cancelAnimationFrame(animationFrameId);
       worker.terminate();
+      if (watchdogTimer) clearInterval(watchdogTimer);
 
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener('keydown', handleInput);

@@ -239,7 +239,28 @@ export default {
 
       try {
         const payload = await request.json() as any;
-        const { turnstileToken, playerAddress, score, distance, powerNodes, multiplier, elapsedTimeSec, runHash } = payload;
+        const { turnstileToken, playerAddress, score, distance, powerNodes, multiplier, elapsedTimeSec, runHash, runId, seed, runDurationMs, checksum } = payload;
+
+        // Verify Checksum if provided
+        if (seed && runDurationMs && checksum) {
+           const msg = `${seed}${runDurationMs}${score}`;
+           const msgBuffer = new TextEncoder().encode(msg);
+           const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+           const hashArray = Array.from(new Uint8Array(hashBuffer));
+           const expectedChecksum = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+           if (expectedChecksum !== checksum) {
+               return new Response(JSON.stringify({ error: "Invalid run checksum" }), { status: 403, headers: CORS_HEADERS });
+           }
+        }
+
+        // Anti-cheat: Speed cap validation using runDurationMs
+        if (runDurationMs) {
+            const speedLimit = 35; // e.g. Max 35 units of distance per second
+            if (distance / (runDurationMs / 1000) > speedLimit) {
+                return new Response(JSON.stringify({ error: "Implausible speed detected" }), { status: 403, headers: CORS_HEADERS });
+            }
+        }
+
 
         // Turnstile Verification
         if (!turnstileToken) {

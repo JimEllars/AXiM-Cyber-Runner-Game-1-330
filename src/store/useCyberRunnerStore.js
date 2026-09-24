@@ -150,7 +150,9 @@ export const useCyberRunnerStore = create(
           runHash: crypto.randomUUID(),
           startTime: Date.now(),
           newlyUnlockedChallenges: [],
-          isPracticeMode: true
+          isPracticeMode: true,
+          runId: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15),
+          seed: Math.random().toString(36).substring(2, 15)
         });
       },
       startGame: () => {
@@ -167,18 +169,33 @@ export const useCyberRunnerStore = create(
           runHash: crypto.randomUUID(),
           startTime: Date.now(),
           newlyUnlockedChallenges: [],
-          isPracticeMode: false
+          isPracticeMode: false,
+          runId: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15),
+          seed: Math.random().toString(36).substring(2, 15)
         });
       },
       
             endGame: async () => {
-        const { score, distance, powerNodes, session_bits, multiplier, runHash, startTime, playerAddress, gameState, challengeProgress, newlyUnlockedChallenges, isPracticeMode } = get();
+        const { score, distance, powerNodes, session_bits, multiplier, runHash, startTime, playerAddress, gameState, challengeProgress, newlyUnlockedChallenges, isPracticeMode, runId, seed } = get();
         if (gameState !== 'PLAYING') return;
         
         set({ gameState: 'SUBMITTING', score: score * get().streakMultiplier });
         const elapsedTimeSec = (Date.now() - startTime) / 1000;
         const today = new Date().toISOString().split('T')[0];
         const isNewDay = challengeProgress.last_play_date !== today;
+
+        const runDurationMs = Date.now() - startTime;
+        let checksum = '';
+        try {
+            if (crypto.subtle) {
+                const msgBuffer = new TextEncoder().encode(`${seed}${runDurationMs}${Math.floor(score * get().streakMultiplier)}`);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                checksum = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            }
+        } catch (e) {
+            console.error('Checksum generation failed', e);
+        }
         
         const newProgress = {
           ...challengeProgress,
@@ -223,7 +240,11 @@ export const useCyberRunnerStore = create(
               bits_collected: session_bits,
               multiplier,
               elapsedTimeSec,
-              runHash
+              runHash,
+              runId,
+              seed,
+              runDurationMs,
+              checksum
             };
             sessionStorage.setItem('pendingRunData', JSON.stringify(runData));
             get().addToast('SESSION EXPIRED', 'Re-sign required to submit score', 'error');
@@ -242,7 +263,11 @@ export const useCyberRunnerStore = create(
             bits_collected: session_bits,
             multiplier,
             elapsedTimeSec,
-            runHash
+            runHash,
+            runId,
+            seed,
+            runDurationMs,
+            checksum
           });
           set({ gameState: 'GAMEOVER' });
           get().broadcastEvent({
@@ -309,7 +334,9 @@ export const useCyberRunnerStore = create(
         }
       },
       
-      collectNode: (type) => set((state) => {
+      collectNode: (type) => {
+        if (typeof navigator !== 'undefined' && 'vibrate' in navigator) navigator.vibrate([15]);
+        return set((state) => {
         let pts = 0;
         let newShield = state.hasShield;
         let newMagnet = state.hasMagnet;
@@ -353,9 +380,11 @@ export const useCyberRunnerStore = create(
         }
 
         return newState;
-      }),
+      });
+      },
 
       hitObstacle: () => {
+        if (typeof navigator !== 'undefined' && 'vibrate' in navigator) navigator.vibrate([50]);
         const { hasShield } = get();
         if (hasShield) {
           set({ hasShield: false });
