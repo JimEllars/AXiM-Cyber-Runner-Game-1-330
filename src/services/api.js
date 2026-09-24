@@ -42,8 +42,8 @@ const flushTelemetry = () => {
 
 const queueTelemetry = (type, payload) => {
   telemetryQueue.push({
-    type,
-    payload,
+    eventType: type,
+    metrics: payload,
     timestamp: new Date().toISOString(),
     sessionId: sessionStorage.getItem('axim_session_id') || 'unknown',
     appVersion: '1.0.0'
@@ -133,12 +133,28 @@ export const runnerApi = {
 
     for (const payload of queue) {
       try {
-        await runnerApi.submitRun(payload);
+        if (payload.type === 'supabase_mutation') {
+            await fetch(payload.url, {
+                method: payload.method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+                    'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY
+                },
+                body: JSON.stringify(payload.body)
+            });
+        } else {
+            // It's a run payload
+            await runnerApi.submitRun(payload);
+        }
       } catch (e) {
         console.error('Failed to flush run to API', e);
         const currentQueue = JSON.parse(localStorage.getItem('axim_offline_queue') || '[]');
-        currentQueue.push(payload);
-        localStorage.setItem('axim_offline_queue', JSON.stringify(currentQueue));
+        // Prevent duplicate queueing if we failed midway through a large queue
+        if (!currentQueue.find(item => JSON.stringify(item) === JSON.stringify(payload))) {
+            currentQueue.push(payload);
+            localStorage.setItem('axim_offline_queue', JSON.stringify(currentQueue));
+        }
       }
     }
   },
