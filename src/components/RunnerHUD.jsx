@@ -409,15 +409,15 @@ const RunnerHUD = () => {
       {/* Bottom Controls Help */}
       {/* Tutorial Overlay */}
       {gameState === 'PLAYING' && !hasSeenTutorial && (
-        <div className="absolute inset-0 z-50 pointer-events-none flex items-center justify-between px-10">
+        <div className="absolute inset-0 z-50 pointer-events-none flex flex-row items-center portrait:items-end portrait:pb-[calc(env(safe-area-inset-bottom)+2rem)] justify-between px-10">
           <div className="bg-black/60 border border-neon-cyan/50 backdrop-blur-sm p-4 rounded-lg flex flex-col items-center gap-2 animate-pulse shadow-[0_0_15px_rgba(0,240,255,0.3)]">
-            <span className="text-neon-cyan font-bold uppercase tracking-widest text-sm text-center">Tap & Hold<br/>to Slide</span>
+            <span className="text-neon-cyan font-bold uppercase tracking-widest text-sm text-center">Swipe Down / Tap<br/>to Slide</span>
             <div className="animate-bounce mt-2 text-neon-cyan">
               <SafeIcon icon={FiIcons.FiArrowDown} className="text-3xl" />
             </div>
           </div>
           <div className="bg-black/60 border border-neon-magenta/50 backdrop-blur-sm p-4 rounded-lg flex flex-col items-center gap-2 animate-pulse shadow-[0_0_15px_rgba(255,0,127,0.3)]">
-            <span className="text-neon-magenta font-bold uppercase tracking-widest text-sm text-center">Tap to Jump<br/>Double Tap</span>
+            <span className="text-neon-magenta font-bold uppercase tracking-widest text-sm text-center">Swipe Up / Tap<br/>Double Tap</span>
             <div className="animate-bounce mt-2 text-neon-magenta">
               <SafeIcon icon={FiIcons.FiArrowUp} className="text-3xl" />
             </div>

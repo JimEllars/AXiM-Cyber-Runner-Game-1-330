@@ -442,10 +442,26 @@ const RunnerCanvas = () => {
       if (gameState !== 'PLAYING') return;
 
       if (!isSwipe && startTouchX) {
-          // Tap handling (fallback to left/right tap)
+          // Tap handling
           const rect = canvas.getBoundingClientRect();
           const touchX = startTouchX - rect.left;
-          if (touchX > rect.width / 2) {
+          const touchY = startTouchY - rect.top;
+          const isPortrait = rect.height > rect.width;
+
+          let isJump = touchX > rect.width / 2;
+
+          if (isPortrait) {
+              // In portrait, use bottom 25% for tap zones to avoid accidental taps in main gameplay area
+              const actionZoneHeight = rect.height * 0.25;
+              if (touchY > rect.height - actionZoneHeight) {
+                  isJump = touchX > rect.width / 2;
+              } else {
+                  // Ignore taps outside the action zone in portrait mode, encourage swipe
+                  isJump = null;
+              }
+          }
+
+          if (isJump === true) {
               if (!fallbackMode) {
                   triggerHaptic([15]);
                   worker.postMessage({ type: 'JUMP' });
@@ -457,7 +473,7 @@ const RunnerCanvas = () => {
                       audioEngine.playJump();
                   }
               }
-          } else {
+          } else if (isJump === false) {
               if (!fallbackMode) {
                   worker.postMessage({ type: 'SLIDE_START' });
               } else {
@@ -572,7 +588,7 @@ const RunnerCanvas = () => {
 
       if (isPortrait) {
           scale = logicalWidth / 800;
-          yOffset = (logicalHeight / scale - 400) * 0.75; // Shift baseline towards bottom
+          yOffset = (logicalHeight / scale - 400) * 0.70; // Shift baseline towards bottom third (70%)
           ctx.scale(scale, scale);
       } else {
           scale = Math.max(logicalWidth / 800, logicalHeight / 400);

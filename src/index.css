@@ -85,3 +85,17 @@
 .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
 .safe-left { padding-left: env(safe-area-inset-left, 0px); }
 .safe-right { padding-right: env(safe-area-inset-right, 0px); }
+
+@media (max-height: 500px) and (orientation: landscape) {
+  /* Ensure header collapses in mobile landscape */
+  header {
+    padding: 0.25rem !important;
+  }
+  header h1 {
+    font-size: 0.875rem !important; /* text-sm */
+  }
+  header button {
+    padding: 0.25rem 0.5rem !important;
+    font-size: 0.6rem !important;
+  }
+}
