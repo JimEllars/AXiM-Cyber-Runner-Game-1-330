@@ -363,7 +363,10 @@ export default {
         await env.RUNNER_STATE.put(`daily_run:${playerAddress.toLowerCase()}:${today}`, "1", { expirationTtl: 86400 });
 
         // Invalidate KV cache asynchronously
-        ctx.waitUntil(env.LEADERBOARD_KV.delete("global_top_100"));
+        ctx.waitUntil(Promise.all([
+          env.LEADERBOARD_KV.delete("global_top_100"),
+          env.LEADERBOARD_KV.delete("leaderboard:global:page:1")
+        ]));
 
 
         const latency = Date.now() - startTime;

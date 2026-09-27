@@ -125,3 +125,8 @@ To intentionally trigger an error and verify the telemetry routing:
 4. **Physics Adjustments**: Reduced obstacle hitbox collision bounds scaling via `scaleX = 0.8` in `src/workers/physicsWorker.js` on portrait layouts to allow a comfortable reaction window.
 5. **Rate Limiting (Edge Bridge)**: Altered the edge worker logic in `edge-bridge/src/index.ts` to strictly limit IPs to 10 valid submissions or achievement requests per 60 seconds (`checkRateLimit` counter loop).
 6. **Testing**: Verified code via `./test_plan.sh` ensuring Types, Eslint, export integrity, and full build succeeds.
+### Sprint 23 Verification Steps:
+1. **Edge KV Paginated Cache Invalidation**: Updated `POST /api/v1/game/runs/complete` to invalidate `leaderboard:global:page:1` alongside `global_top_100`. Verified via manual inspection of code.
+2. **Silent Passport SSO Session Heartbeat**: Added 10-minute periodic interval in `src/App.jsx` calling `runnerApi.checkSession()`. Added silent failover and toast notification on success.
+3. **Audio Engine Performance Mode Calibration**: Implemented `setPerformanceMode(isPerf)` in `SynthAudioEngine.js` to restrict polyphony and avoid heavy volume ramps. Integrated it in `RunnerCanvas.jsx` when low FPS is detected.
+4. **Test Suite**: Executed `test_plan.sh` which confirms eslint passes, Vite build succeeds, and `wrangler types` is validated. All checks pass.

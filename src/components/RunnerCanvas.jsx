@@ -532,6 +532,7 @@ const RunnerCanvas = () => {
             lowFpsTime += 1000;
             if (lowFpsTime >= 3000) {
                 performanceMode = true;
+                audioEngine.setPerformanceMode(true);
                 if (crtEnabled && toggleCrt) toggleCrt();
                 console.log(JSON.stringify({ level: "info", type: "cyber_runner_telemetry", data: { message: "Low FPS detected. Enabling performance mode (disabling CRT and heavy shadows)." } }));
             }
