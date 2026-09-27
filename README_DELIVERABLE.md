@@ -116,3 +116,12 @@ To intentionally trigger an error and verify the telemetry routing:
 2. Verified Safe Mobile Haptics Helper replaced direct calls to `navigator.vibrate` with `triggerHaptic`.
 3. Verified edge bridge properly handles 429 logic with `Retry-After: 10` headers.
 4. Verified `SYS.DIAG` HUD accessibility includes `FiX` close icon, `Escape` key support, and `offlineQueueCount` indicator.
+
+## Verification Steps Taken
+
+1. **Mobile Landscape Fix**: Modified `src/App.jsx` to hide the footer and reduce header padding via Tailwind `landscape:` variants when oriented horizontally. Added explicit `@media (max-height: 500px) and (orientation: landscape)` CSS block to `src/index.css`.
+2. **Portrait Gameplay Mode**: Updated `src/components/RunnerCanvas.jsx` to lower the `yOffset` to 70% in portrait mode for optimal viewing. Configured portrait tap action zones to bottom 25% to avoid gameplay area tapping, and fallback correctly to swipe everywhere else.
+3. **Ergonomic HUD**: Added text updates in `src/components/RunnerHUD.jsx` tutorial to instruct on Swipe & Tap inputs.
+4. **Physics Adjustments**: Reduced obstacle hitbox collision bounds scaling via `scaleX = 0.8` in `src/workers/physicsWorker.js` on portrait layouts to allow a comfortable reaction window.
+5. **Rate Limiting (Edge Bridge)**: Altered the edge worker logic in `edge-bridge/src/index.ts` to strictly limit IPs to 10 valid submissions or achievement requests per 60 seconds (`checkRateLimit` counter loop).
+6. **Testing**: Verified code via `./test_plan.sh` ensuring Types, Eslint, export integrity, and full build succeeds.

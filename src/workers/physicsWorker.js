@@ -105,11 +105,28 @@ self.onmessage = function(e) {
     }
 
     const checkCollision = (rect1, rect2) => {
+        // Scale hitboxes for portrait to make it slightly more forgiving
+        const isPortrait = currentHeight > currentWidth;
+        const scaleX = isPortrait ? 0.8 : 1.0;
+
+        const r1 = {
+            x: rect1.x + rect1.w * (1 - scaleX) / 2,
+            y: rect1.y,
+            w: rect1.w * scaleX,
+            h: rect1.h
+        };
+        const r2 = {
+            x: rect2.x + rect2.w * (1 - scaleX) / 2,
+            y: rect2.y,
+            w: rect2.w * scaleX,
+            h: rect2.h
+        };
+
         return (
-            rect1.x < rect2.x + rect2.w &&
-            rect1.x + rect1.w > rect2.x &&
-            rect1.y < rect2.y + rect2.h &&
-            rect1.y + rect1.h > rect2.y
+            r1.x < r2.x + r2.w &&
+            r1.x + r1.w > r2.x &&
+            r1.y < r2.y + r2.h &&
+            r1.y + r1.h > r2.y
         );
     };
 

@@ -96,7 +96,7 @@ function App() {
         <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_80%_80%,#00f0ff_0%,transparent_40%)]" />
       </div>
 
-      <header className="border-b border-neon-magenta/20 bg-black/60 backdrop-blur-md p-4 flex justify-between items-center z-30 font-mono shadow-lg">
+      <header className="border-b border-neon-magenta/20 bg-black/60 backdrop-blur-md p-4 landscape:p-1 flex justify-between items-center z-30 font-mono shadow-lg">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2">
             <div className="w-10 h-10 bg-neon-cyan/10 border border-neon-cyan flex items-center justify-center rounded shadow-[0_0_10px_rgba(0,240,255,0.2)]">
@@ -154,7 +154,7 @@ function App() {
         </div>
       </header>
 
-      <main className="flex-1 flex items-center justify-center p-4 relative z-10">
+      <main className="flex-1 flex items-center justify-center p-4 landscape:p-0 relative z-10">
         <div className="relative w-full h-full group flex items-center justify-center">
           <div className="absolute -top-1 -left-1 w-8 h-8 border-t-2 border-l-2 border-neon-cyan z-20" />
           <div className="absolute -top-1 -right-1 w-8 h-8 border-t-2 border-r-2 border-neon-cyan z-20" />
@@ -166,7 +166,7 @@ function App() {
         </div>
       </main>
 
-      <footer className="p-2 border-t border-white/5 bg-black/40 text-[9px] text-gray-600 font-mono flex justify-between items-center z-30 uppercase tracking-[0.2em]">
+      <footer className="p-2 border-t border-white/5 bg-black/40 text-[9px] text-gray-600 font-mono flex justify-between items-center z-30 uppercase tracking-[0.2em] landscape:hidden">
         <div>© 2026 AXIM PROTOCOL | ARCADE ENGINE v1.5.0</div>
         <div className="flex gap-4">
           <span>Arbitrum Mainnet</span>
