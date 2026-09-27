@@ -7,6 +7,13 @@ class SynthAudioEngine {
     this.isPlaying = false;
     this.warmedUp = false;
     this.activeSounds = 0;
+    this.performanceMode = false;
+  }
+
+
+
+  setPerformanceMode(isPerf) {
+    this.performanceMode = isPerf;
   }
 
   warmUp() {
@@ -42,6 +49,7 @@ class SynthAudioEngine {
   playTone(freq, type = 'square', duration = 0.1, vol = 0.1) {
     const { isMuted } = useCyberRunnerStore.getState();
     if (isMuted) return;
+    if (this.performanceMode && this.activeSounds >= 2) return; // Restrict polyphony to 2 in perf mode
     if (this.activeSounds > 3) return; // Drop sound if too many are playing
 
     this.initCtx();
@@ -57,7 +65,11 @@ class SynthAudioEngine {
     osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
     
     gain.gain.setValueAtTime(duckedVol, this.ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+    if (this.performanceMode) {
+      gain.gain.setValueAtTime(0.01, this.ctx.currentTime + duration);
+    } else {
+      gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+    }
     
     osc.connect(gain);
     gain.connect(this.ctx.destination);

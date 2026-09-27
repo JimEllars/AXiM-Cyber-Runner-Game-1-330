@@ -49,6 +49,41 @@ function App() {
     initializeApp();
   }, []);
 
+
+  useEffect(() => {
+    let intervalId;
+
+    // Function to set up the interval
+    const setupInterval = () => {
+      const { playerState, addToast } = useCyberRunnerStore.getState();
+      if (playerState.address) {
+        intervalId = setInterval(async () => {
+          try {
+            await runnerApi.checkSession();
+          } catch (e) {
+            addToast('Session Refreshed - Sign in to update cloud balance', '', 'info');
+          }
+        }, 10 * 60 * 1000); // 10 minutes
+      }
+    };
+
+    setupInterval();
+
+    // Subscribe to changes in playerState.address
+    const unsubscribe = useCyberRunnerStore.subscribe(
+      (state) => state.playerState.address,
+      (address) => {
+        if (intervalId) clearInterval(intervalId);
+        setupInterval();
+      }
+    );
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+      unsubscribe();
+    };
+  }, []);
+
   useEffect(() => {
     const handleMessage = (e) => {
       // In a real implementation this might parse messages from a parent window
