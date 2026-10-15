@@ -1,22 +1,18 @@
 #!/bin/bash
 set -e
 
-echo "Running lint checks via eslint..."
+echo "1. Running ESLint..."
 npx eslint src/
 
-echo "Executing Vite production build..."
+echo "2. Building Vite Production Bundle..."
 npm run build
 
-echo "Validating Worker bundle integrity..."
+echo "3. Validating Worker Types..."
 npx wrangler types worker-configuration.d.ts || true
 
-echo "Verifying critical exports in useCyberRunnerStore.js..."
+echo "4. Verifying Critical Exports..."
 grep -q "export const useCyberRunnerStore" src/store/useCyberRunnerStore.js
-
-echo "Verifying critical exports in SynthAudioEngine.js..."
 grep -q "class SynthAudioEngine" src/utils/SynthAudioEngine.js
-
-echo "Verifying critical exports in api.js..."
 grep -q "export const runnerApi" src/services/api.js
 
-echo "Tests pass"
+echo "Sprint 25 Automated Checks Passed."

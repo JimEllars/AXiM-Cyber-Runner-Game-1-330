@@ -27,6 +27,8 @@ const ClaimModal = ({ isOpen, onClose }) => {
   const [isMinting, setIsMinting] = useState(false);
   const [signatureLoading, setSignatureLoading] = useState(false);
   const [txHash, setTxHash] = useState(null);
+  const [signatureData, setSignatureData] = useState(null);
+  const [timeLeft, setTimeLeft] = useState(0);
 
   const { address } = useAccount();
   const { writeContract, data: hash, isPending: isWritePending, error: writeError } = useWriteContract();
@@ -39,8 +41,34 @@ const ClaimModal = ({ isOpen, onClose }) => {
     if (isConfirmed) {
       setIsMinting(false);
       setTxHash(hash || "0x123abc456def78901234567890abcdef12345678");
+      setSignatureData(null);
     }
   }, [isConfirmed, hash]);
+
+  useEffect(() => {
+    let intervalId;
+    if (signatureData && !isConfirmed) {
+      const updateTimer = () => {
+        const now = Date.now();
+        const remaining = Math.max(0, Math.ceil((signatureData.expiresAt - now) / 1000));
+        setTimeLeft(remaining);
+
+        if (remaining === 0) {
+          // Signature expired!
+          setSignatureData(null);
+          // Auto-request fresh signature if still minting and not confirmed
+          if (isMinting) {
+            handleMint();
+          }
+        }
+      };
+      updateTimer();
+      intervalId = setInterval(updateTimer, 1000);
+    }
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [signatureData, isConfirmed, isMinting]);
 
   useEffect(() => {
     if (writeError || confirmError) {
@@ -61,8 +89,10 @@ const ClaimModal = ({ isOpen, onClose }) => {
       setSignatureLoading(true);
 
       // Step 1: Call stubbed api
-      const signature = await runnerApi.getClaimSignature(claimable_erc20_allowance, address);
+      const response = await runnerApi.getClaimSignature(claimable_erc20_allowance, address);
       setSignatureLoading(false);
+      setSignatureData(response);
+      setTimeLeft(Math.max(0, Math.ceil((response.expiresAt - Date.now()) / 1000)));
 
       // Step 2: Stub Wagmi useWriteContract hook call
       // MOCK ABI for stubbing
@@ -83,12 +113,13 @@ const ClaimModal = ({ isOpen, onClose }) => {
         address: AXIM_TOKEN_CONTRACT_ADDRESS,
         abi: mockAbi,
         functionName: 'claimTokens',
-        args: [claimable_erc20_allowance, signature],
+        args: [claimable_erc20_allowance, response.signature],
       });
 
     } catch (error) {
       setSignatureLoading(false);
       setIsMinting(false);
+      setSignatureData(null);
       console.error(error);
       addToast('SIGNATURE ERROR', 'Failed to get claim signature', 'error');
     }
@@ -134,6 +165,14 @@ const ClaimModal = ({ isOpen, onClose }) => {
           </div>
         </div>
 
+
+        {signatureData && !txHash && (
+          <div className="mb-4 text-center">
+            <span className="text-neon-gold text-xs uppercase tracking-wider">
+              Signature Valid: 0:{timeLeft.toString().padStart(2, '0')}s
+            </span>
+          </div>
+        )}
 
         {isWrongNetwork ? (
           <button

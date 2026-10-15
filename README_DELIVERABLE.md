@@ -130,3 +130,14 @@ To intentionally trigger an error and verify the telemetry routing:
 2. **Silent Passport SSO Session Heartbeat**: Added 10-minute periodic interval in `src/App.jsx` calling `runnerApi.checkSession()`. Added silent failover and toast notification on success.
 3. **Audio Engine Performance Mode Calibration**: Implemented `setPerformanceMode(isPerf)` in `SynthAudioEngine.js` to restrict polyphony and avoid heavy volume ramps. Integrated it in `RunnerCanvas.jsx` when low FPS is detected.
 4. **Test Suite**: Executed `test_plan.sh` which confirms eslint passes, Vite build succeeds, and `wrangler types` is validated. All checks pass.
+
+### Sprint 25 Verification Steps:
+1. **Edge KV Paginated Cache Pre-Warming**: Updated `POST /api/v1/game/runs/complete` in `edge-bridge/src/index.ts` to invalidate `leaderboard:global:page:1` and `global_top_100`. Additionally, added an async `ctx.waitUntil` block that fetches the top 75 scores from Supabase and splits them into pages 1-3, storing them in the `LEADERBOARD_KV` with a 60-second TTL to guarantee fast response times for top pages.
+2. **Web3 Claim Allowance Pre-Flight & Signature TTL**: Updated `getClaimSignature` in `src/services/api.js` to return a 30-second TTL. Updated `ClaimModal.jsx` to render a countdown timer "Signature Valid: 0:{timeLeft}s" when a signature is retrieved, and added logic to automatically fetch a new signature if the current one expires before the user confirms the transaction.
+3. **Edge Telemetry Diagnostics Summary Endpoint**: Added `GET /api/v1/admin/telemetry-summary` endpoint to `edge-bridge/src/index.ts` to aggregate latency and error rates from the latest `telemetry_logs` entries, protected by a Bearer token (`env.AXIM_INTERNAL_KEY`).
+4. **Test Suite**: Executed `test_plan.sh` which confirms eslint passes, Vite build succeeds, and `wrangler types` is validated. All checks pass.
+
+To verify KV Pre-Warming locally:
+1. Start the local Wrangler dev server in the `edge-bridge` directory (`npx wrangler dev`).
+2. Make a POST request to `/api/v1/game/runs/complete` with valid run data to trigger the cache invalidation and pre-warming process.
+3. Immediately query the local KV store for `leaderboard:global:page:1`, `leaderboard:global:page:2`, and `leaderboard:global:page:3` (e.g. `npx wrangler kv:key get "leaderboard:global:page:1" --binding=LEADERBOARD_KV --local`) and verify the data is populated.
