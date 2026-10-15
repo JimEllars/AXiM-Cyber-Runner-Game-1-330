@@ -298,8 +298,13 @@ export const runnerApi = {
     try {
       // Simulate network delay
       await new Promise(resolve => setTimeout(resolve, 800));
-      // Return a mock signature
-      return "0xmocksignaturedeadbeef1234567890abcdef";
+      // Return a mock signature and ttl info
+      return {
+        signature: "0xmocksignaturedeadbeef1234567890abcdef",
+        amount,
+        nonce: Math.floor(Math.random() * 1000000),
+        expiresAt: Date.now() + 30000
+      };
     } catch (error) {
       console.error('Claim Signature Error:', error);
       throw error;
